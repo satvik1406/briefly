@@ -1,0 +1,1 @@
+Briefly is a summarization tool for code, research papers and documentation.
