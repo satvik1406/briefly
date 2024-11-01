@@ -1,12 +1,12 @@
 from fastapi import APIRouter
-from controllers.controller import get_object as controller_get_object, post_object as controller_post_object
-from models.object import Object
+from controllers.controller import controller_create_new_user, controller_verify_user
+from models.models import User
 router = APIRouter()
 
-@router.get("/")
-async def get_objects():
-    return controller_get_object()
+@router.post("/auth/user/create")
+async def create_new_user(obj: User):
+    return controller_create_new_user(obj)
 
-@router.post("/")
-async def create_object(obj: Object):
-    return controller_post_object(obj)
+@router.post("/auth/user/verify")
+async def verify_user(obj: User):
+    return controller_verify_user(obj)

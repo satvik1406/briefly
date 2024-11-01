@@ -1,10 +1,11 @@
 import './App.css';
+import AuthForms from './AuthForms';
 
 function App() {
   return (
-    <div>
-      Helloowww!!
-    </div>
+    <>
+     <AuthForms /> 
+    </>
   );
 }
 

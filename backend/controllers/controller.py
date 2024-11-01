@@ -1,10 +1,10 @@
-from models.object import Object
-from config.database import collection_name
+from models.models import User
+from config.database import user_collection_name, collection_name
 from schema.schema import list_serialiser
 
-def get_object():
-    object = list_serialiser(collection_name.find())
-    return object
+def controller_create_new_user(user: User):
+    user_collection_name.insert_one(dict(user))
 
-def post_object(obj: Object):
-    collection_name.insert_one(dict(obj))
+def controller_verify_user(obj: User) -> User:
+    user = collection_name.find_one({'email':obj.email})
+    return user
