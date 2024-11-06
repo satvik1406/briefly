@@ -1,12 +1,24 @@
 from fastapi import APIRouter
-from controllers.controller import controller_create_new_user, controller_verify_user
-from models.models import User
+from services.service import *
+from models.models import User, Summary
 router = APIRouter()
 
 @router.post("/auth/user/create")
 async def create_new_user(obj: User):
-    return controller_create_new_user(obj)
+    res = service_create_new_user(obj)
+    return {"status": "OK", "result": res}
 
 @router.post("/auth/user/verify")
 async def verify_user(obj: User):
-    return controller_verify_user(obj)
+    res = service_verify_user(obj)
+    return {"status": "OK", "result": res}
+
+@router.get("/user/{user_id}/summaries")
+async def user_summaries(user_id):
+    res = service_user_summaries(user_id)
+    return {"status": "OK", "result": res}
+
+@router.post("/user/create/summary")
+async def user_summaries(obj: Summary):
+    res = service_create_summary(obj)
+    return {"status": "OK", "result": res}

@@ -21,3 +21,13 @@ export const verifyUser = async (userData) => {
     throw error.response?.data || 'Error verifying user';
   }
 };
+
+export const getUserSummaries = async (user_id) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/user/${user_id}/summaries`);
+    return response.data;
+  } catch (error) {
+    console.error('Error verifying user:', error.response?.data || error.message);
+    throw error.response?.data || 'Error verifying user';
+  }
+};

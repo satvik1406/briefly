@@ -1,42 +1,131 @@
-import React, { useState } from 'react';
-import { Box, Container } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Container, CircularProgress } from '@mui/material';
+import { useAuth } from './App';
 import Sidebar from './Sidebar';
 import SummaryContent from './SummaryContent';
 import NewSummaryDialog from './NewSummary';
 
 const Dashboard = () => {
-  const [summaries, setSummaries] = useState([
-    { id: 1, title: 'React Dashboard Components', date: 'Today', content: 'Details about dashboard components' },
-    { id: 2, title: 'Model Deprecation Error 해결', date: 'Today', content: 'Steps to resolve model deprecation error' },
-    { id: 3, title: 'Django Import Error Troubleshooting', date: 'Yesterday', content: 'Troubleshooting tips for Django import errors' },
-  ]);
+  const { userData, loading: authLoading } = useAuth();
+  const [summaries, setSummaries] = useState([]);
   const [openNewDialog, setOpenNewDialog] = useState(false);
   const [selectedSummaryId, setSelectedSummaryId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleNewSummary = (newSummary) => {
-    setSummaries([...summaries, { ...newSummary, id: summaries.length + 1 }]);
+  useEffect(() => {
+    const fetchSummaries = async () => {
+      try {
+        // Replace with your actual API endpoint
+        const response = await fetch(`your-api-endpoint/summaries/${userData.id}`, {
+          headers: {
+            'Authorization': `Bearer ${userData.token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch summaries');
+        }
+        
+        const data = await response.json();
+        setSummaries(data);
+      } catch (error) {
+        console.error('Error fetching summaries:', error);
+        // Handle error appropriately
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userData) {
+      fetchSummaries();
+    }
+  }, [userData]);
+
+  const handleNewSummary = async (newSummary) => {
+    try {
+      // Replace with your actual API endpoint
+      const response = await fetch(`your-api-endpoint/summaries`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userData.token}`
+        },
+        body: JSON.stringify(newSummary)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create summary');
+      }
+
+      const createdSummary = await response.json();
+      setSummaries([...summaries, createdSummary]);
+    } catch (error) {
+      console.error('Error creating summary:', error);
+      // Handle error appropriately
+    }
   };
 
   const handleSummarySelect = (id) => {
     setSelectedSummaryId(id);
   };
 
-  const handleDeleteSummary = (id) => {
-    setSummaries(summaries.filter((summary) => summary.id !== id));
+  const handleDeleteSummary = async (id) => {
+    try {
+      // Replace with your actual API endpoint
+      const response = await fetch(`your-api-endpoint/summaries/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${userData.token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete summary');
+      }
+
+      setSummaries(summaries.filter((summary) => summary.id !== id));
+    } catch (error) {
+      console.error('Error deleting summary:', error);
+      // Handle error appropriately
+    }
   };
+
+  if (authLoading || loading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          bgcolor: 'grey.50'
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   const selectedSummary = summaries.find((summary) => summary.id === selectedSummaryId);
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      height: '100vh',
+      bgcolor: 'grey.50'
+    }}>
       <Sidebar
         summaries={summaries}
         onSummarySelect={handleSummarySelect}
         onNewSummaryClick={() => setOpenNewDialog(true)}
+        userName={`${userData.firstName} ${userData.lastName}`}
       />
 
-      <Container sx={{ flexGrow: 1 }}>
-        <SummaryContent selectedSummary={selectedSummary} />
+      <Container sx={{ flexGrow: 1, p: 3 }}>
+        <SummaryContent 
+          selectedSummary={selectedSummary}
+          onDelete={handleDeleteSummary} 
+        />
       </Container>
 
       <NewSummaryDialog
