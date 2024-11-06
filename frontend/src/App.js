@@ -20,18 +20,20 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       
       const response = await verifyUser({ email, password });
-      
-      if (response.token) {
+
+      console.log(response)
+      debugger;
+      if (response.result.auth_token) {
         // Store token in localStorage or secure storage
-        localStorage.setItem('authToken', response.token);
+        localStorage.setItem('auth_token', response.result.auth_token);
         
         // Set auth state
-        setUserData(response.user);
+        setUserData(response.result.user);
         setIsAuthenticated(true);
         
         // Fetch user's summaries using the token
         try {
-          const summariesResponse = await getUserSummaries(response.user_id);
+          const summariesResponse = await getUserSummaries(userData.id);
           
           if (summariesResponse.ok) {
             const summariesData = await summariesResponse.result.json();

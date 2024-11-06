@@ -5,15 +5,14 @@ from pydantic_extra_types import phone_numbers
 import uuid
 
 class User(BaseModel):
-    _id: str = str(uuid.uuid4()) 
     firstName: Optional[str] = None
     lastName: Optional[str] = None
     phone: Optional[phone_numbers.PhoneNumber] = None
     email: Optional[EmailStr] = None
     password: Optional[str] = None
     confirmPassword: Optional[str] = None
-    createdAt: Optional[datetime.datetime] = None
-    lastLoggedInAt: Optional[datetime.datetime] = None
+    createdAt: datetime.datetime = datetime.datetime.now(datetime.UTC)
+    lastLoggedInAt: datetime.datetime = datetime.datetime.now(datetime.UTC)
 
     @validator('confirmPassword')
     def passwords_match(cls, confirmPassword, values):
@@ -28,5 +27,5 @@ class Summary(BaseModel):
     uploadType: str
     initialData: Optional[str] = None
     outputData: Optional[str] = None
-    createdAt: Optional[datetime.datetime] = None
-    updatedAt: Optional[datetime.datetime] = None
+    createdAt: datetime.datetime = datetime.datetime.now(datetime.UTC)
+    updatedAt: datetime.datetime = datetime.datetime.now(datetime.UTC)

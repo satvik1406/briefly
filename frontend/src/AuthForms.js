@@ -301,15 +301,15 @@ const AuthForms = () => {
                 onChange={handlePhoneChange}
                 inputStyle={{
                   width: '100%',
-                  height: '40px',
-                  borderRadius: '8px',
+                  height: '55px',
+                  borderRadius: '4px',
                   border: '1px solid #ced4da',
                   fontSize: '16px',
                   paddingLeft: '48px',
                 }}
                 buttonStyle={{
-                  borderRadius: '8px 0 0 8px',
-                  border: '1px solid #ced4da',
+                  borderRadius: '4px 0 0 4px',
+                  border: '0.5px solid #ced4da',
                 }}
                 containerStyle={{
                   width: '100%',

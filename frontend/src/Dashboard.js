@@ -4,6 +4,7 @@ import { useAuth } from './App';
 import Sidebar from './Sidebar';
 import SummaryContent from './SummaryContent';
 import NewSummaryDialog from './NewSummary';
+import { getUserSummaries } from './RequestService';
 
 const Dashboard = () => {
   const { userData, loading: authLoading } = useAuth();
@@ -15,22 +16,16 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchSummaries = async () => {
       try {
-        // Replace with your actual API endpoint
-        const response = await fetch(`your-api-endpoint/summaries/${userData.id}`, {
-          headers: {
-            'Authorization': `Bearer ${userData.token}`
-          }
-        });
+        const response = await getUserSummaries(userData.id);
         
         if (!response.ok) {
           throw new Error('Failed to fetch summaries');
         }
         
-        const data = await response.json();
+        const data = await response.result.json();
         setSummaries(data);
       } catch (error) {
         console.error('Error fetching summaries:', error);
-        // Handle error appropriately
       } finally {
         setLoading(false);
       }

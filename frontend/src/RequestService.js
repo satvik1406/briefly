@@ -24,7 +24,13 @@ export const verifyUser = async (userData) => {
 
 export const getUserSummaries = async (user_id) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/user/${user_id}/summaries`);
+    const token = localStorage.getItem('auth_token');
+    const response = await axios.get(`${API_BASE_URL}/user/${user_id}/summaries`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
     return response.data;
   } catch (error) {
     console.error('Error verifying user:', error.response?.data || error.message);
