@@ -37,3 +37,25 @@ export const getUserSummaries = async (user_id) => {
     throw error.response?.data || 'Error verifying user';
   }
 };
+
+export const createUserSummary = async (userData) => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    
+    const response = await axios.post(
+      `${API_BASE_URL}/user/create/summary`,
+      userData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error creating user summary:', error.response?.data || error.message);
+    throw error.response?.data || 'Error creating user summary';
+  }
+};

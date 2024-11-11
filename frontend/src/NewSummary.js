@@ -14,6 +14,8 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { Description, Code, Article, UploadFile } from '@mui/icons-material';
+import { useAuth } from './App'; // Assuming useAuth is the context hook
+import { createUserSummary } from './RequestService';
 
 const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
   '& .MuiToggleButtonGroup-grouped': {
@@ -66,7 +68,8 @@ const FileUploadBox = styled(Paper)(({ theme }) => ({
   },
 }));
 
-const NewSummaryDialog = ({ open, onClose }) => {
+const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
+  const { userData } = useAuth();
   const [summaryType, setSummaryType] = useState('');
   const [inputMethod, setInputMethod] = useState('');
   const [content, setContent] = useState('');
@@ -82,10 +85,24 @@ const NewSummaryDialog = ({ open, onClose }) => {
     setFile(event.target.files[0]);
   };
 
-  const handleTypeSelect = () => {
+  const handleTypeSelect = async () => {
     if (summaryType && inputMethod && (content || file)) {
-      console.log('Creating new summary:', { summaryType, inputMethod, content, file });
-      onClose(); // Close the dialog after creating the summary
+      const newSummary = {
+        'userId' : userData.id,
+        'type': summaryType,
+        'uploadType': inputMethod,
+        'initialData': inputMethod === 'type' ? content : file,
+      };
+
+      debugger;
+
+      try {
+        const createdSummary = await createUserSummary(newSummary);
+        if (onCreateSuccess) onCreateSuccess(createdSummary);
+        onClose();
+      } catch (error) {
+        console.error('Error creating summary:', error);
+      }
     }
   };
 

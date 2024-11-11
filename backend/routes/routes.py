@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Security
+from fastapi import APIRouter, HTTPException, status, Depends, Security, Body
 from services.service import *
 from models.models import User, Summary
 from exceptions import *
@@ -11,8 +11,8 @@ security = HTTPBearer()
 def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)):
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return payload  # Token is valid, return payload (user data)
+        jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
@@ -43,8 +43,9 @@ async def user_summaries(user_id: str=Depends(verify_token)):
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 @router.post("/user/create/summary", status_code=status.HTTP_201_CREATED)
-async def create_summary(obj: Summary=Depends(verify_token)):
+async def create_summary(obj: Summary = Body(...),  _ = Depends(verify_token)):
     try:
+        print(obj)
         res = service_create_summary(obj)
         return {"status": "OK", "result": res}
     except ServiceError as e:

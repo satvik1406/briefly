@@ -21,8 +21,6 @@ export const AuthProvider = ({ children }) => {
       
       const response = await verifyUser({ email, password });
 
-      console.log(response)
-      debugger;
       if (response.result.auth_token) {
         // Store token in localStorage or secure storage
         localStorage.setItem('auth_token', response.result.auth_token);
@@ -119,6 +117,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  React.useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      verifyToken(token); // Verify the token on page load
+    } else {
+      setLoading(false); // Set loading to false if no token is found
+    }
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -167,6 +174,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<AuthForms />} />
           <Route
             path="/dashboard"
@@ -176,7 +184,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
