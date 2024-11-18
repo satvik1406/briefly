@@ -23,7 +23,7 @@ def service_create_new_user(user: User):
     user_data = dict(user)
     user_data['_id'] = str(uuid.uuid4())
     users_collection_name.insert_one(user_data)
-    return {"message": "User created successfully", "user_id": user_data['_id']}
+    return {"message": "User created successfully", "userId": user_data['_id']}
 
 def service_verify_user(obj: User) -> dict:
     user = users_collection_name.find_one({'email': obj.email})
@@ -33,15 +33,15 @@ def service_verify_user(obj: User) -> dict:
     
     token_expires = datetime.timedelta(days=30)
     token = create_access_token(
-        data={"user_id": user['_id']}, expires_delta=token_expires
+        data={"userId": user['_id']}, expires_delta=token_expires
     )
 
     user_dict = user_serialiser(user)
 
     return {'auth_token': token, 'user': user_dict}  
 
-def service_user_summaries(user_id: str) -> list:
-    summaries = summaries_collection_name.find({'user_id': user_id})
+def service_user_summaries(userId: str) -> list:
+    summaries = summaries_collection_name.find({'userId': userId})
     summary_list = summary_list_serialiser(summaries)
     if not summary_list:
         return []
