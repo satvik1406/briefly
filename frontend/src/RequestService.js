@@ -22,10 +22,10 @@ export const verifyUser = async (userData) => {
   }
 };
 
-export const getUserSummaries = async (user_id) => {
+export const getUserSummaries = async (userId) => {
   try {
     const token = localStorage.getItem('auth_token');
-    const response = await axios.get(`${API_BASE_URL}/user/${user_id}/summaries`, {
+    const response = await axios.get(`${API_BASE_URL}/user/${userId}/summaries`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
