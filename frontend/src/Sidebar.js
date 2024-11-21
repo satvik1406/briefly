@@ -11,10 +11,13 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
+  Tooltip,
 } from '@mui/material';
-import { Add, Search, MoreVert, Share, Edit, Archive, Delete } from '@mui/icons-material';
+import { Add, Search, MoreVert, Share, Edit, Archive, Delete, Logout } from '@mui/icons-material';
+import { useAuth } from './App';
 
 const Sidebar = ({ summaries, onSummarySelect, onNewSummaryClick }) => {
+  const { logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedSummaryId, setSelectedSummaryId] = useState(null);
@@ -48,9 +51,14 @@ const Sidebar = ({ summaries, onSummarySelect, onNewSummaryClick }) => {
       }}
     >
       {/* Company Branding */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Box
-          sx={{
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        mb: 3 
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{
             width: 40,
             height: 40,
             backgroundColor: '#1976d2',
@@ -62,13 +70,26 @@ const Sidebar = ({ summaries, onSummarySelect, onNewSummaryClick }) => {
             fontSize: 20,
             fontWeight: 'bold',
             mr: 2,
-          }}
-        >
-          B
+          }}>
+            B
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>
+            Briefly
+          </Typography>
         </Box>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>
-          Briefly
-        </Typography>
+        <Tooltip title="Logout" arrow placement="bottom">
+          <IconButton 
+            onClick={logout}
+            sx={{ 
+              color: '#666',
+              '&:hover': {
+                color: '#1976d2',
+              }
+            }}
+          >
+            <Logout />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* New Summary Button */}
