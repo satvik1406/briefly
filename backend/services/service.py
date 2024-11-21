@@ -2,6 +2,7 @@ import uuid
 from models.models import User, Summary
 from config.database import users_collection_name, summaries_collection_name
 from schema.schema import *
+from services.call_to_AI import call_to_AI
 from exceptions import ServiceError, NotFoundError, ValidationError
 import datetime
 import jwt
@@ -50,6 +51,7 @@ def service_user_summaries(userId: str) -> list:
 
 def service_create_summary(summary: Summary):
     summary_data = dict(summary)
+    summary_data['outputData'] = call_to_AI(summary_data['type'],summary_data['initialData'])
     summary_data['_id'] = str(uuid.uuid4())
     summaries_collection_name.insert_one(summary_data)
     return {"message": "Summary created successfully", "summary_id": summary_data['_id']}
