@@ -32,7 +32,7 @@ const Sidebar = ({ summaries, onSummarySelect, onNewSummaryClick }) => {
   };
 
   const filteredSummaries = summaries.filter((summary) =>
-    summary.title.toLowerCase().includes(searchQuery.toLowerCase())
+    summary.result.userId.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -132,8 +132,8 @@ const Sidebar = ({ summaries, onSummarySelect, onNewSummaryClick }) => {
             }
           >
             <ListItemText
-              primary={summary.title}
-              secondary={summary.date}
+              primary={summary.type}
+              secondary={summary.uploadType}
               primaryTypographyProps={{ fontWeight: 'bold', color: '#333' }}
               secondaryTypographyProps={{ color: '#666', fontSize: '0.8rem' }}
             />
