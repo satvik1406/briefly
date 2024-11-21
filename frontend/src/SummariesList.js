@@ -9,10 +9,14 @@ import {
   Button,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { useAuth } from './App'; // Assuming useAuth is available for user context
-import { getUserSummaries } from './RequestService'; // Reuse the existing function
+import { useAuth } from './App';
+import { getUserSummaries, deleteUserSummary } from './RequestService'; // Import the delete function
 
 const StyledCard = styled(Card)(({ theme }) => ({
   boxShadow: theme.shadows[3],
@@ -26,34 +30,57 @@ const StyledCard = styled(Card)(({ theme }) => ({
 const SummariesList = () => {
   const { userData } = useAuth(); // Get user info from Auth context
   const [summaries, setSummaries] = useState([]);
+  const [selectedSummary, setSelectedSummary] = useState(null); // State for the selected summary
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(false); // Loading state for deletion
+
+  const fetchSummaries = async () => {
+    try {
+      setLoading(true);
+      const response = await getUserSummaries(userData.id);
+      if (response.status !== 'OK') {
+        throw new Error('Failed to fetch summaries');
+      }
+      const data = response.result;
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid response format: result is not an array');
+      }
+      setSummaries(data);
+    } catch (err) {
+      console.error('Error fetching summaries:', err);
+      setError('Failed to load summaries. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchSummaries = async () => {
-      try {
-        setLoading(true);
-        const response = await getUserSummaries(userData.id);
-        if (!response.status === 'OK') {
-          throw new Error('Failed to fetch summaries');
-        }
-        const data = response.result;
-        if (!Array.isArray(data)) {
-            throw new Error('Invalid response format: result is not an array');
-        }
-        setSummaries(data);
-      } catch (err) {
-        console.error('Error fetching summaries:', err);
-        setError('Failed to load summaries. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (userData) {
       fetchSummaries();
     }
   }, [userData]);
+
+  const handleDeleteSummary = async (summaryId) => {
+    try {
+      setDeleting(true);
+      await deleteUserSummary(summaryId); // Call the delete function
+      setSummaries((prev) => prev.filter((summary) => summary.id !== summaryId)); // Optimistically update UI
+    } catch (err) {
+      console.error('Error deleting summary:', err);
+      setError('Failed to delete summary. Please try again later.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleViewSummary = (summary) => {
+    setSelectedSummary(summary); // Open dialog with selected summary
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedSummary(null); // Close dialog
+  };
 
   if (loading) {
     return (
@@ -105,17 +132,45 @@ const SummariesList = () => {
                 </Typography>
               </CardContent>
               <CardActions>
-                <Button size="small" color="primary">
+                <Button size="small" color="primary" onClick={() => handleViewSummary(summary)}>
                   View
                 </Button>
-                <Button size="small" color="secondary">
-                  Delete
+                <Button
+                  size="small"
+                  color="secondary"
+                  onClick={() => handleDeleteSummary(summary.id)}
+                  disabled={deleting} // Disable button while deleting
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
                 </Button>
               </CardActions>
             </StyledCard>
           </Grid>
         ))}
       </Grid>
+
+      {/* Dialog for Viewing Summary */}
+      {selectedSummary && (
+        <Dialog open={Boolean(selectedSummary)} onClose={handleCloseDialog} fullWidth maxWidth="sm">
+          <DialogTitle>{selectedSummary.title || 'Untitled Summary'}</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              Type: {selectedSummary.type || 'General'}
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              Created At: {new Date(selectedSummary.createdAt).toLocaleString()}
+            </Typography>
+            <Typography variant="body1" sx={{ mt: 2, whiteSpace: 'pre-wrap' }}>
+              {selectedSummary.content || 'No content available.'}
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog} color="primary">
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };

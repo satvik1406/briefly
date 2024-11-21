@@ -117,12 +117,12 @@ const Dashboard = () => {
         userName={`${userData.firstName} ${userData.lastName}`}
       />
 
-      <Container sx={{ flexGrow: 1, p: 3 }}>
+      {/* <Container sx={{ flexGrow: 1, p: 3 }}>
         <SummaryContent 
           selectedSummary={selectedSummary}
           onDelete={handleDeleteSummary} 
         />
-      </Container>
+      </Container> */}
 
       <Container sx={{ flexGrow: 1, py: 4 }}>
         <SummariesList summaries={summaries} />

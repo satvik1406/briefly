@@ -59,3 +59,19 @@ export const createUserSummary = async (userData) => {
     throw error.response?.data || 'Error creating user summary';
   }
 };
+
+export const deleteUserSummary = async (summaryId) => {
+  try {
+    const token = localStorage.getItem('auth_token'); // Get auth token
+    const response = await axios.delete(`${API_BASE_URL}/summary/${summaryId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return response;
+  } catch (error) {
+    console.error('Error deleting summary:', error.response?.data || error.message);
+    throw error.response?.data || 'Error deleting summary';
+  }
+};

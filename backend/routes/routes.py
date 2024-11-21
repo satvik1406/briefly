@@ -35,10 +35,7 @@ async def verify_user(obj: User):
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 @router.get("/user/{userId}/summaries", status_code=status.HTTP_200_OK)
-async def user_summaries(
-    userId: str,                                   
-    _auth: HTTPAuthorizationCredentials = Security(security)
-):
+async def user_summaries(userId: str, _ = Depends(verify_token)):
     try:
         res = service_user_summaries(userId)
         return {"status": "OK", "result": res}
