@@ -34,11 +34,10 @@ const SummariesList = () => {
       try {
         setLoading(true);
         const response = await getUserSummaries(userData.id);
-        if (!response.status == 'OK') {
+        if (!response.status === 'OK') {
           throw new Error('Failed to fetch summaries');
         }
         const data = response.result;
-        debugger ;
         if (!Array.isArray(data)) {
             throw new Error('Invalid response format: result is not an array');
         }
