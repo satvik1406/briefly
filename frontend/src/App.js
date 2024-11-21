@@ -174,7 +174,6 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<AuthForms />} />
           <Route
             path="/dashboard"
@@ -184,6 +183,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -4,6 +4,7 @@ import { useAuth } from './App';
 import Sidebar from './Sidebar';
 import SummaryContent from './SummaryContent';
 import NewSummaryDialog from './NewSummary';
+import SummariesList from './SummariesList';
 import { getUserSummaries } from './RequestService';
 
 const Dashboard = () => {
@@ -121,6 +122,10 @@ const Dashboard = () => {
           selectedSummary={selectedSummary}
           onDelete={handleDeleteSummary} 
         />
+      </Container>
+
+      <Container sx={{ flexGrow: 1, py: 4 }}>
+        <SummariesList summaries={summaries} />
       </Container>
 
       <NewSummaryDialog
