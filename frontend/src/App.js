@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { createUser, verifyUser, getUserSummaries } from './RequestService';
 import AuthForms from './AuthForms';
 import Dashboard from './Dashboard';
+import { jwtDecode } from 'jwt-decode';
 
 // Create Auth Context
 const AuthContext = createContext(null);
@@ -11,7 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState(null);
   const [summaries, setSummaries] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const login = async (email, password) => {
@@ -22,30 +23,16 @@ export const AuthProvider = ({ children }) => {
       const response = await verifyUser({ email, password });
 
       if (response.result.auth_token) {
-        // Store token in localStorage or secure storage
         localStorage.setItem('auth_token', response.result.auth_token);
+        localStorage.setItem('user_data', JSON.stringify(response.result.user));
         
-        // Set auth state
         setUserData(response.result.user);
         setIsAuthenticated(true);
-        
-        // Fetch user's summaries using the token
-        try {
-          const summariesResponse = await getUserSummaries(userData.id);
-          
-          if (summariesResponse.ok) {
-            const summariesData = await summariesResponse.result.json();
-            setSummaries(summariesData);
-          }
-        } catch (summaryError) {
-          console.error('Error fetching summaries:', summaryError);
-        }
         
         return { success: true };
       }
       
       throw new Error('Invalid credentials');
-      
     } catch (error) {
       setError(error.message || 'Authentication failed');
       return {
@@ -77,38 +64,48 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_data');
     setIsAuthenticated(false);
     setUserData(null);
     setSummaries([]);
     setError(null);
   };
 
-  // Check token on mount
-  React.useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      // Verify token validity with backend
-      verifyToken(token);
-    }
-  }, []);
-
-  const verifyToken = async (token) => {
+  const verifyToken = async () => {
     try {
-      setLoading(true);
-      const response = await fetch(`localhost:8000/auth/verify-token`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (response.ok) {
-        const userData = await response.json();
-        setUserData(userData);
-        setIsAuthenticated(true);
-      } else {
-        logout();
+      const token = localStorage.getItem('auth_token');
+      const storedUserData = localStorage.getItem('user_data');
+
+      if (!token || !storedUserData) {
+        throw new Error('No token or user data found');
       }
+
+      const decodedToken = jwtDecode(token);
+      
+      if (decodedToken.exp * 1000 < Date.now()) {
+        throw new Error('Token expired');
+      }
+
+      const parsedUserData = JSON.parse(storedUserData);
+      setUserData(parsedUserData);
+      setIsAuthenticated(true);
+
+      try {
+        console.log('Fetching summaries for user:', parsedUserData.id);
+        const summariesResponse = await getUserSummaries(parsedUserData.id);
+        console.log('Summaries response:', summariesResponse);
+        
+        if (summariesResponse && summariesResponse.status === 'OK') {
+          setSummaries(summariesResponse.result || []);
+        } else {
+          console.error('Invalid summaries response:', summariesResponse);
+        }
+      } catch (error) {
+        console.error('Error fetching summaries:', error);
+        setSummaries([]);
+      }
+
     } catch (error) {
       console.error('Token verification failed:', error);
       logout();
@@ -117,13 +114,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  React.useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      verifyToken(token); // Verify the token on page load
-    } else {
-      setLoading(false); // Set loading to false if no token is found
-    }
+  useEffect(() => {
+    verifyToken();
   }, []);
 
   return (
@@ -156,14 +148,14 @@ const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isAuthenticated && !loading) {
       navigate('/login', { replace: true });
     }
   }, [isAuthenticated, loading, navigate]);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <div>Loading...</div>;
   }
 
   return isAuthenticated ? children : null;
