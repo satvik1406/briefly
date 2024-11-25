@@ -55,3 +55,42 @@ def service_create_summary(summary: Summary):
     summary_data['_id'] = str(uuid.uuid4())
     summaries_collection_name.insert_one(summary_data)
     return {"message": "Summary created successfully", "summary_id": summary_data['_id']}
+
+def service_share_summary(summary_id: str, recipient: str):
+    """
+    Shares a summary with another user.
+    :param summary_id: ID of the summary to share
+    :param recipient: Recipient's email or username
+    :return: Success or failure message
+    """
+    try:
+        # Check if the summary exists
+        summary = summaries_collection_name.find_one({"_id": summary_id})
+        if not summary:
+            raise NotFoundError("Summary not found")
+
+        # Check if the recipient exists
+        recipient_user = users_collection_name.find_one({"email": recipient})
+        if not recipient_user:
+            raise NotFoundError("Recipient not found")
+
+        # Create a record in the shared summaries (if necessary)
+        shared_record = {
+            "_id": str(uuid.uuid4()),
+            "summary_id": summary_id,
+            "sender_id": summary["userId"],
+            "recipient_id": recipient_user["_id"],
+            "shared_at": datetime.datetime.utcnow(),
+        }
+
+        # Assuming you have a collection for shared summaries
+        shared_summaries_collection = summaries_collection_name.database["shared_summaries"]
+        shared_summaries_collection.insert_one(shared_record)
+
+        # Return success message
+        return {"message": f"Summary shared successfully with {recipient}"}
+
+    except NotFoundError as e:
+        raise NotFoundError(e.detail)
+    except Exception as e:
+        raise ServiceError(f"Failed to share summary: {str(e)}")

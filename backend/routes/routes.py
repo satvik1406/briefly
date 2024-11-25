@@ -50,3 +50,20 @@ async def create_summary(obj: Summary = Body(...),  _ = Depends(verify_token)):
         return {"status": "OK", "result": res}
     except ServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+@router.post("/summary/share", status_code=status.HTTP_200_OK)
+async def share_summary(summary_id: str = Body(...), recipient: str = Body(...), _ = Depends(verify_token)):
+    """
+    Route to share a summary with another user.
+    :param summary_id: ID of the summary to be shared
+    :param recipient: Recipient username or email
+    :return: Success or failure response
+    """
+    try:
+        # Call the service function to share the summary
+        res = service_share_summary(summary_id, recipient)
+        return {"status": "OK", "result": res}
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
