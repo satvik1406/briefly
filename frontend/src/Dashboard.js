@@ -18,12 +18,10 @@ const Dashboard = () => {
     const fetchSummaries = async () => {
       try {
         const response = await getUserSummaries(userData.id);
-        
-        if (!response.ok) {
+        if (response.status !== "OK") {
           throw new Error('Failed to fetch summaries');
         }
-        
-        const data = await response.result.json();
+        const data = response.result;
         setSummaries(data);
       } catch (error) {
         console.error('Error fetching summaries:', error);
@@ -39,22 +37,13 @@ const Dashboard = () => {
 
   const handleNewSummary = async (newSummary) => {
     try {
-      // Replace with your actual API endpoint
-      const response = await fetch(`your-api-endpoint/summaries`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userData.token}`
-        },
-        body: JSON.stringify(newSummary)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create summary');
+      debugger;
+      const response = await getUserSummaries(newSummary.userId);
+      if (response.status !== "OK") {
+        throw new Error('Failed to fetch summaries');
       }
-
-      const createdSummary = await response.json();
-      setSummaries([...summaries, createdSummary]);
+      const data = response.result;
+      setSummaries(data);
     } catch (error) {
       console.error('Error creating summary:', error);
       // Handle error appropriately
@@ -75,7 +64,7 @@ const Dashboard = () => {
         }
       });
 
-      if (!response.ok) {
+      if (response.status !== "OK") {
         throw new Error('Failed to delete summary');
       }
 
