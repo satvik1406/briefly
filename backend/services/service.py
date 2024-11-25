@@ -10,7 +10,7 @@ SECRET_KEY = "your_secret_key"
 
 def create_access_token(data: dict, expires_delta: datetime.timedelta):
     to_encode = data.copy()
-    expire = datetime.datetime.now(datetime.UTC) + expires_delta
+    expire = datetime.datetime.now(datetime.timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
     return encoded_jwt
@@ -41,12 +41,14 @@ def service_verify_user(obj: User) -> dict:
     return {'auth_token': token, 'user': user_dict}  
 
 def service_user_summaries(userId: str) -> list:
-    summaries = summaries_collection_name.find({'userId': userId})
-    summary_list = summary_list_serialiser(summaries)
-    if not summary_list:
-        return []
-    
-    return summary_list
+    try:
+        summaries_cursor = summaries_collection_name.find({"userId": userId})
+        summaries = list(summaries_cursor)  # Convert cursor to list
+        if not summaries:
+            return []  # Return empty list if no summaries are found
+        return summary_list_serialiser(summaries)
+    except Exception as e:
+        raise ServiceError(f"Failed to fetch summaries: {str(e)}")
 
 def service_create_summary(summary: Summary):
     summary_data = dict(summary)
