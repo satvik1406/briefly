@@ -1,10 +1,12 @@
 import uuid
 from models.models import User, Summary
-from config.database import users_collection_name, summaries_collection_name
+from config.database import users_collection_name, summaries_collection_name, grid_fs
 from schema.schema import *
 from exceptions import ServiceError, NotFoundError, ValidationError
+from gridfs import GridFS
 import datetime
 import jwt
+from fastapi import UploadFile
 
 SECRET_KEY = "your_secret_key"
 
@@ -53,3 +55,40 @@ def service_create_summary(summary: Summary):
     summary_data['_id'] = str(uuid.uuid4())
     summaries_collection_name.insert_one(summary_data)
     return {"message": "Summary created successfully", "summary_id": summary_data['_id']}
+
+async def service_process_file(file: UploadFile, summary: Summary):
+    file_contents = await file.read()
+
+    metadata = {
+        "filename": file.filename,
+        "content_type": file.content_type,
+    }
+
+    file_id = grid_fs.put(
+        file_contents,
+        filename=metadata["filename"],
+        content_type=metadata["content_type"]
+    )
+
+    metadata["file_id"] = str(file_id)
+
+    summary.filedata = metadata
+    summary_data = dict(summary)
+    summary_data['_id'] = str(uuid.uuid4())
+    summaries_collection_name.insert_one(summary_data)
+
+    return str(file_id)
+
+def service_delete_summary(summary_id: str):
+    summary = summaries_collection_name.find_one({"_id": summary_id})
+    if not summary:
+        raise ValueError("Summary not found")
+
+    if "filedata" in summary and summary["filedata"]:
+        file_id = summary["filedata"].get("file_id") 
+        if file_id:
+            grid_fs.delete(file_id)
+
+    summaries_collection_name.delete_one({"_id": summary_id})
+
+    return {"message": "Summary deleted successfully"}

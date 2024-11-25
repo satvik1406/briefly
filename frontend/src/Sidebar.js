@@ -34,8 +34,8 @@ const Sidebar = ({ summaries, onSummarySelect, onNewSummaryClick }) => {
     setSelectedSummaryId(null);
   };
 
-  const filteredSummaries = summaries.filter((summary) =>
-    summary.result.userId.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredSummaries = summaries.filter((summary) => 
+    summary.userId.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

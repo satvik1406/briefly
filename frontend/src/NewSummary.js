@@ -15,7 +15,7 @@ import {
 import { styled } from '@mui/material/styles';
 import { Description, Code, Article, UploadFile } from '@mui/icons-material';
 import { useAuth } from './App'; // Assuming useAuth is the context hook
-import { createUserSummary } from './RequestService';
+import { createUserSummary, userSummaryUpload } from './RequestService';
 
 const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
   '& .MuiToggleButtonGroup-grouped': {
@@ -61,12 +61,26 @@ const FileUploadBox = styled(Paper)(({ theme }) => ({
   justifyContent: 'center',
   gap: theme.spacing(1),
   borderRadius: theme.shape.borderRadius,
-  transition: 'background-color 0.3s ease, color 0.3s ease',
+  transition: 'all 0.3s ease',
+  background: 'linear-gradient(135deg, #e3f2fd, #ffffff)',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
   '&:hover': {
-    backgroundColor: '#e3f2fd',
+    background: 'linear-gradient(135deg, #bbdefb, #e3f2fd)',
     color: '#1565c0',
+    boxShadow: '0 6px 10px rgba(0, 0, 0, 0.15)',
   },
 }));
+
+const StyledUploadIcon = styled(UploadFile)(({ theme }) => ({
+  fontSize: 64,
+  color: theme.palette.primary.main,
+  transition: 'transform 0.3s ease',
+  '&:hover': {
+    transform: 'scale(1.1)',
+    color: theme.palette.primary.dark,
+  },
+}));
+
 
 const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
   const { userData } = useAuth();
@@ -85,6 +99,18 @@ const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
     setFile(event.target.files[0]);
   };
 
+  const handleReset = () => {
+    setSummaryType('');
+    setInputMethod('');
+    setContent('');
+    setFile(null);
+  };
+
+  const handleCancel = () => {
+    handleReset();
+    onClose();
+  };
+
   const handleTypeSelect = async () => {
     if (summaryType && inputMethod && (content || file)) {
       const newSummary = {
@@ -97,8 +123,15 @@ const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
       debugger;
 
       try {
-        const createdSummary = await createUserSummary(newSummary);
-        if (onCreateSuccess) onCreateSuccess(createdSummary);
+        var createdSummary;
+        if(inputMethod == 'upload') {
+          createdSummary = await userSummaryUpload(newSummary);
+        } else {
+          createdSummary = await createUserSummary(newSummary);
+        }
+      
+        handleReset();
+        onCreateSuccess(createdSummary);
         onClose();
       } catch (error) {
         console.error('Error creating summary:', error);
@@ -109,7 +142,7 @@ const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleCancel}
       fullWidth
       maxWidth="md"
     >
@@ -157,10 +190,15 @@ const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
               onChange={handleFileChange}
             />
             <FileUploadBox>
-              <UploadFile sx={{ fontSize: 48 }} />
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              <StyledUploadIcon />
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1565c0' }}>
                 {file ? file.name : 'Click to upload file'}
               </Typography>
+              {!file && (
+                <Typography variant="body2" color="textSecondary">
+                  Supported formats: PDF, DOCX, TXT
+                </Typography>
+              )}
             </FileUploadBox>
           </label>
         )}
@@ -182,7 +220,7 @@ const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color="primary">Cancel</Button>
+        <Button onClick={handleCancel} color="primary">Cancel</Button>
         <Button onClick={handleTypeSelect} disabled={!summaryType || !inputMethod || (!content && !file)} color="primary">
           Create
         </Button>
