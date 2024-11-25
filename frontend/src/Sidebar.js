@@ -126,7 +126,7 @@ const Sidebar = ({ summaries, onSummarySelect, onNewSummaryClick }) => {
       {/* Summaries List */}
       <List sx={{ overflowY: 'auto', flexGrow: 1 }}>
         <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#666', mb: 1 }}>
-          Today
+          Summaries
         </Typography>
         {filteredSummaries.map((summary) => (
           <ListItem
@@ -154,7 +154,7 @@ const Sidebar = ({ summaries, onSummarySelect, onNewSummaryClick }) => {
           >
             <ListItemText
               primary={summary.type}
-              secondary={summary.uploadType}
+              secondary={`Uploaded on: ${summary.date || 'Invalid Date'}`}
               primaryTypographyProps={{ fontWeight: 'bold', color: '#333' }}
               secondaryTypographyProps={{ color: '#666', fontSize: '0.8rem' }}
             />
