@@ -26,17 +26,15 @@ export const getUserSummaries = async (userId) => {
   try {
     const token = localStorage.getItem('auth_token');
     const response = await axios.get(`${API_BASE_URL}/summaries/${userId}`, {
-    headers: {
+      headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
-
-    console.log("Summaries fetched from API:", response.data); // Debug API response
-    return response.data; // Ensure it matches backend response structure
+    return response.data;
   } catch (error) {
-    console.error("Error fetching summaries:", error);
-    throw error;
+    console.error('Error verifying user:', error.response?.data || error.message);
+    throw error.response?.data || 'Error verifying user';
   }
 };
 
