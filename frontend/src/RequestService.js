@@ -81,6 +81,10 @@ export const deleteUserSummary = async (summaryId) => {
 export const shareSummary = async (summaryId, recipient) => {
   try {
     const token = localStorage.getItem('auth_token'); // Get auth token
+    console.log("Request body:", {
+      summary_id: summaryId,
+      recipient: recipient,
+    });
     const response = await axios.post(
       `${API_BASE_URL}/summary/share`, // Adjust the API endpoint as per your backend
       {
@@ -94,6 +98,7 @@ export const shareSummary = async (summaryId, recipient) => {
         },
       }
     );
+    
     return response.data; // Return the response data
   } catch (error) {
     console.error('Error sharing summary:', error.response?.data || error.message);
