@@ -38,3 +38,26 @@ def summary_list_serialiser(summaries):
         }
         for summary in summaries
     ]
+
+def shared_summary_serialiser(record: dict, summary: dict, sender: dict) -> dict:
+    """
+    Serialize a single shared summary including input content (initialData).
+    
+    :param record: The shared summary record from `shared_summaries` collection.
+    :param summary: The corresponding summary document from `summaries` collection.
+    :param sender: The user document of the sender from `users` collection.
+    :return: Serialized shared summary as a dictionary.
+    """
+    # Call summary_serialiser for the summary content
+    serialized_summary = summary_serialiser(summary)
+    
+    return {
+        "id": serialized_summary["id"],  # Use the summary ID from the serialized summary
+        "title": serialized_summary.get("type", "Untitled Summary"),  # Use type as title
+        "content": serialized_summary.get("outputData", "No content available"),  # Use outputData as content
+        "inputContent": serialized_summary.get("initialData", "No initial data available"),  # Use initialData as input content
+        "sharedBy": sender.get("email", "Unknown"),  # Sender's email
+        "sharedAt": datetime.strftime(
+            record.get("shared_at", datetime.now()), "%B %d, %Y"
+        ) if isinstance(record.get("shared_at"), datetime) else "Invalid Date",  # Formatted shared date
+    }

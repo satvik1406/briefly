@@ -1,6 +1,6 @@
 import uuid
 from models.models import User, Summary
-from config.database import users_collection_name, summaries_collection_name
+from config.database import users_collection_name, summaries_collection_name, shared_summaries_collection_name
 from schema.schema import *
 from exceptions import ServiceError, NotFoundError, ValidationError
 import datetime
@@ -72,7 +72,7 @@ def service_share_summary(summary_id: str, recipient: str):
         # Check if the recipient exists
         recipient_user = users_collection_name.find_one({"email": recipient})
         if not recipient_user:
-            raise NotFoundError("Recipient not found")
+            raise NotFoundError("The recipient must be a registered user of Briefly.")
 
         # Create a record in the shared summaries (if necessary)
         shared_record = {
@@ -94,3 +94,37 @@ def service_share_summary(summary_id: str, recipient: str):
         raise NotFoundError(e.detail)
     except Exception as e:
         raise ServiceError(f"Failed to share summary: {str(e)}")
+    
+def service_get_shared_summaries(user_id: str):
+    """
+    Fetch summaries shared with a specific user.
+    """
+    try:
+        # Query shared summaries for the given user
+        shared_records = shared_summaries_collection_name.find({"recipient_id": user_id})
+        shared_summaries = list(shared_records)
+
+        if not shared_summaries:
+            raise NotFoundError("No summaries shared with this user")
+
+        # Fetch summary details and include sharedBy information
+        result = []
+        for record in shared_summaries:
+            summary_id = record.get("summary_id")
+            sender_id = record.get("sender_id")
+
+            # Fetch summary details
+            summary = summaries_collection_name.find_one({"_id": summary_id})
+            if not summary:
+                continue
+
+            # Fetch sender details
+            sender = users_collection_name.find_one({"_id": sender_id})
+
+            # Add summary with additional details
+            result.append(shared_summary_serialiser(record, summary, sender))
+
+        return result
+
+    except Exception as e:
+        raise NotFoundError(f"Failed to fetch shared summaries: {str(e)}")

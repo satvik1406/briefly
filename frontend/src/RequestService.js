@@ -105,3 +105,21 @@ export const shareSummary = async (summaryId, recipient) => {
     throw error.response?.data || 'Error sharing summary';
   }
 };
+
+
+export const getUserSharedSummaries = async (userId) => {
+  try {
+    const token = localStorage.getItem('auth_token'); // Ensure auth token is available
+    const response = await axios.get(`${API_BASE_URL}/user/${userId}/shared-summaries`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    console.log("Shared Summaries fetched from API:", response.data); // Debug API response
+    return response.data; // Return the fetched data
+  } catch (error) {
+    console.error('Error fetching shared summaries:', error.response?.data || error.message);
+    throw error.response?.data || 'Error fetching shared summaries';
+  }
+};

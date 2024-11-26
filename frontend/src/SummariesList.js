@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from './App';
-import { getUserSummaries, deleteUserSummary,shareSummary } from './RequestService'; // Import the delete function
+import { getUserSummaries, deleteUserSummary,shareSummary,getUserSharedSummaries } from './RequestService'; // Import the delete function
 
 const StyledCard = styled(Card)(({ theme }) => ({
   boxShadow: theme.shadows[3],
@@ -38,6 +38,8 @@ const SummariesList = () => {
   const [sharingSummary, setSharingSummary] = useState(null); // State for sharing summary
   const [recipient, setRecipient] = useState(''); // Recipient email/username
   const [sharing, setSharing] = useState(false); // Sharing state
+  const [errorMessage, setErrorMessage] = useState(""); 
+  const [sharedSummaries, setSharedSummaries] = useState([]);
 
   const fetchSummaries = async () => {
     try {
@@ -59,9 +61,32 @@ const SummariesList = () => {
     }
   };
 
+  const fetchSharedSummaries = async () => {
+    try {
+      setLoading(true);
+      const response = await getUserSharedSummaries(userData.id);
+      if (response.status !== 'OK') {
+        throw new Error('Failed to fetch shared summaries');
+      }
+      const data = response.result;
+
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid response format: result is not an array');
+      }
+      setSharedSummaries(data);
+    } catch (err) {
+      console.error('Error fetching shared summaries:', err);
+      setError('Failed to load shared summaries. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (userData) {
       fetchSummaries();
+      fetchSharedSummaries();
+      console.log("functions called");
     }
   }, [userData]);
 
@@ -94,8 +119,11 @@ const SummariesList = () => {
       setSharingSummary(null);
       setRecipient('');
     } catch (err) {
+      console.log(err);
       console.error('Error sharing summary:', err);
-      alert('Failed to share summary. Please try again.');
+      const errorMessage= err.detail ;
+    
+      setErrorMessage(errorMessage);
     } finally {
       setSharing(false);
     }
@@ -215,6 +243,12 @@ const SummariesList = () => {
               onChange={(e) => setRecipient(e.target.value)}
               sx={{ mb: 2 }}
             />
+             {/* Error Message */}
+      {errorMessage && (
+        <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+          {errorMessage}
+        </Typography>
+      )}
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog} color="secondary">

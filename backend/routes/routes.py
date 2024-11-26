@@ -67,3 +67,18 @@ async def share_summary(summary_id: str = Body(...), recipient: str = Body(...),
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except ServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+    
+@router.get("/user/{user_id}/shared-summaries", status_code=status.HTTP_200_OK)
+async def get_shared_summaries(user_id: str, _ = Depends(verify_token)):
+    """
+    Fetch all summaries shared with the specified user.
+    """
+    try:
+        summaries = service_get_shared_summaries(user_id)
+        print(summaries)
+        return {"status": "OK", "result": summaries}
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to fetch shared summaries")
+    
