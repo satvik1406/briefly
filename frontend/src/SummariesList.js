@@ -125,7 +125,7 @@ const SummariesList = () => {
                   {summary.title || 'Untitled Summary'}
                 </Typography>
                 <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                  {(Date(summary.createdAt).split(/[G]/))[0].split("-")}
+                  {summary.type || 'General'} - {new Date(summary.createdAt).toLocaleDateString()}
                 </Typography>
                 <Typography variant="body1" sx={{ height: '60px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {summary.content || 'No content available for this summary.'}
@@ -155,7 +155,10 @@ const SummariesList = () => {
           <DialogTitle>{selectedSummary.title || 'Untitled Summary'}</DialogTitle>
           <DialogContent>
             <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-              Created At: {(Date(selectedSummary.createdAt).split(/[G]/))[0].split("-")}
+              Type: {selectedSummary.type || 'General'}
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              Created At: {new Date(selectedSummary.createdAt).toLocaleString()}
             </Typography>
             <Typography variant="body1" sx={{ mt: 2, whiteSpace: 'pre-wrap' }}>
               {selectedSummary.content || 'No content available.'}

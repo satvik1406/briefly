@@ -1,11 +1,13 @@
 import uuid
 from models.models import User, Summary
-from config.database import users_collection_name, summaries_collection_name
+from config.database import users_collection_name, summaries_collection_name, grid_fs
 from schema.schema import *
 from services.call_to_AI import call_to_AI
 from exceptions import ServiceError, NotFoundError, ValidationError
+from gridfs import GridFS
 import datetime
 import jwt
+from fastapi import UploadFile
 
 SECRET_KEY = "your_secret_key"
 
@@ -42,14 +44,12 @@ def service_verify_user(obj: User) -> dict:
     return {'auth_token': token, 'user': user_dict}  
 
 def service_user_summaries(userId: str) -> list:
-    try:
-        summaries_cursor = summaries_collection_name.find({"userId": userId})
-        summaries = list(summaries_cursor)  # Convert cursor to list
-        if not summaries:
-            return []  # Return empty list if no summaries are found
-        return summary_list_serialiser(summaries)
-    except Exception as e:
-        raise ServiceError(f"Failed to fetch summaries: {str(e)}")
+    summaries = summaries_collection_name.find({'userId': userId})
+    summary_list = summary_list_serialiser(summaries)
+    if not summary_list:
+        return []
+    
+    return summary_list
 
 def service_create_summary(summary: Summary):
     summary_data = dict(summary)
@@ -62,3 +62,40 @@ def service_create_summary(summary: Summary):
     summary_data['_id'] = str(uuid.uuid4())
     summaries_collection_name.insert_one(summary_data)
     return {"message": "Summary created successfully", "summary_id": summary_data['_id']}
+
+async def service_process_file(file: UploadFile, summary: Summary):
+    file_contents = await file.read()
+
+    metadata = {
+        "filename": file.filename,
+        "content_type": file.content_type,
+    }
+
+    file_id = grid_fs.put(
+        file_contents,
+        filename=metadata["filename"],
+        content_type=metadata["content_type"]
+    )
+
+    metadata["file_id"] = str(file_id)
+
+    summary.filedata = metadata
+    summary_data = dict(summary)
+    summary_data['_id'] = str(uuid.uuid4())
+    summaries_collection_name.insert_one(summary_data)
+
+    return str(file_id)
+
+def service_delete_summary(summary_id: str):
+    summary = summaries_collection_name.find_one({"_id": summary_id})
+    if not summary:
+        raise ValueError("Summary not found")
+
+    if "filedata" in summary and summary["filedata"]:
+        file_id = summary["filedata"].get("file_id") 
+        if file_id:
+            grid_fs.delete(file_id)
+
+    summaries_collection_name.delete_one({"_id": summary_id})
+
+    return {"message": "Summary deleted successfully"}
