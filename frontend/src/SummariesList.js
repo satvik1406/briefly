@@ -250,8 +250,6 @@ const SummariesList = ({onNewSummaryClick}) => {
 
       <SummaryToggle onToggleChange={(view) => console.log('Selected View:', view)} />
 
-        {/* Dropdown Filter */}
-
       <Grid container spacing={4}>
         {filteredSummaries.map((summary) => (
           <Grid item xs={12} sm={6} md={4} key={summary.id}>
