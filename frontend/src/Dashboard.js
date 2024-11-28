@@ -6,6 +6,7 @@ import SummaryContent from './SummaryContent';
 import NewSummaryDialog from './NewSummary';
 import SummariesList from './SummariesList';
 import { getUserSummaries } from './RequestService';
+import Navbar from './Navbar';
 
 const Dashboard = () => {
   const { userData, loading: authLoading } = useAuth();
@@ -18,12 +19,10 @@ const Dashboard = () => {
     const fetchSummaries = async () => {
       try {
         const response = await getUserSummaries(userData.id);
-        
-        if (!response.ok) {
+        if (response.status !== "OK") {
           throw new Error('Failed to fetch summaries');
         }
-        
-        const data = await response.result.json();
+        const data = response.result;
         setSummaries(data);
       } catch (error) {
         console.error('Error fetching summaries:', error);
@@ -39,22 +38,13 @@ const Dashboard = () => {
 
   const handleNewSummary = async (newSummary) => {
     try {
-      // Replace with your actual API endpoint
-      const response = await fetch(`your-api-endpoint/summaries`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userData.token}`
-        },
-        body: JSON.stringify(newSummary)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create summary');
+      debugger;
+      const response = await getUserSummaries(newSummary.userId);
+      if (response.status !== "OK") {
+        throw new Error('Failed to fetch summaries');
       }
-
-      const createdSummary = await response.json();
-      setSummaries([...summaries, createdSummary]);
+      const data = response.result;
+      setSummaries(data);
     } catch (error) {
       console.error('Error creating summary:', error);
       // Handle error appropriately
@@ -75,7 +65,7 @@ const Dashboard = () => {
         }
       });
 
-      if (!response.ok) {
+      if (response.status !== "OK") {
         throw new Error('Failed to delete summary');
       }
 
@@ -105,38 +95,44 @@ const Dashboard = () => {
   const selectedSummary = summaries.find((summary) => summary.id === selectedSummaryId);
 
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      height: '100vh',
-      bgcolor: 'grey.50'
-    }}>
-      <Sidebar
-        summaries={summaries}
-        onSummarySelect={handleSummarySelect}
-        onNewSummaryClick={() => setOpenNewDialog(true)}
-        userName={`${userData.firstName} ${userData.lastName}`}
-      />
+    <>
+      <Navbar />
+      <Box sx={{ 
+        display: 'flex', 
+        height: '100vh',
+        bgcolor: 'grey.50'
+      }}>
+        {/* <Sidebar
+          summaries={summaries}
+          onSummarySelect={handleSummarySelect}
+          onNewSummaryClick={() => setOpenNewDialog(true)}
+          userName={`${userData.firstName} ${userData.lastName}`}
+        /> */}
 
-      {/* <Container sx={{ flexGrow: 1, p: 3 }}>
-        <SummaryContent 
-          selectedSummary={selectedSummary}
-          onDelete={handleDeleteSummary} 
+        {/* <Container sx={{ flexGrow: 1, p: 3 }}>
+          <SummaryContent 
+            selectedSummary={selectedSummary}
+            onDelete={handleDeleteSummary} 
+          />
+        </Container> */}
+
+        <Container sx={{ flexGrow: 10, py: 4 }}>
+          <SummariesList 
+          summaries={summaries} 
+          onNewSummaryClick={() => setOpenNewDialog(true)}
+          />
+        </Container>
+
+        <NewSummaryDialog
+          open={openNewDialog}
+          onClose={() => setOpenNewDialog(false)}
+          onCreate={(summary) => {
+            handleNewSummary(summary);
+            setOpenNewDialog(false);
+          }}
         />
-      </Container> */}
-
-      <Container sx={{ flexGrow: 1, py: 4 }}>
-        <SummariesList summaries={summaries} />
-      </Container>
-
-      <NewSummaryDialog
-        open={openNewDialog}
-        onClose={() => setOpenNewDialog(false)}
-        onCreate={(summary) => {
-          handleNewSummary(summary);
-          setOpenNewDialog(false);
-        }}
-      />
-    </Box>
+      </Box>
+    </>
   );
 };
 

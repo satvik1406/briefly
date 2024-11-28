@@ -34,9 +34,8 @@ const Sidebar = ({ summaries, onSummarySelect, onNewSummaryClick }) => {
     setSelectedSummaryId(null);
   };
 
-  // Filter summaries based on the search query
-  const filteredSummaries = summaries.filter((summary) =>
-    summary.result.userId.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredSummaries = summaries.filter((summary) => 
+    summary.userId.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -127,7 +126,7 @@ const Sidebar = ({ summaries, onSummarySelect, onNewSummaryClick }) => {
       {/* Summaries List */}
       <List sx={{ overflowY: 'auto', flexGrow: 1 }}>
         <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#666', mb: 1 }}>
-          Summaries
+          Today
         </Typography>
         {filteredSummaries.map((summary) => (
           <ListItem
@@ -155,7 +154,7 @@ const Sidebar = ({ summaries, onSummarySelect, onNewSummaryClick }) => {
           >
             <ListItemText
               primary={summary.type}
-              secondary={`Uploaded on: ${summary.date || 'Invalid Date'}`}
+              secondary={summary.uploadType}
               primaryTypographyProps={{ fontWeight: 'bold', color: '#333' }}
               secondaryTypographyProps={{ color: '#666', fontSize: '0.8rem' }}
             />

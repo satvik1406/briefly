@@ -1,5 +1,3 @@
-from datetime import datetime
-
 def user_serialiser(object) -> dict:
     return {
         "id": str(object["_id"]),
@@ -20,24 +18,14 @@ def summary_serialiser(object) -> dict:
         "userId": str(object["userId"]),
         "type": str(object["type"]),
         "uploadType": str(object["uploadType"]),
-        "initialData": str(object["type"]),
-        "outputData": str(object["outputData"])
+        "initialData": str(object["initialData"]),
+        "outputData": str(object["outputData"]),
+        "createdAt": str(object["createdAt"]),
+        "title": str(object["title"])
     }
 
-
-def summary_list_serialiser(summaries):
-    return [
-        {
-            "id": str(summary["_id"]),
-            "title": summary.get("type", "Untitled Summary"),
-            "content": summary.get("initialData", "No content available for this summary"),
-
-            "date": datetime.strftime(
-                summary.get("createdAt", datetime.now()), "%B %d, %Y"
-            ) if isinstance(summary.get("createdAt"), datetime) else "Invalid Date",
-        }
-        for summary in summaries
-    ]
+def summary_list_serialiser(objects) -> list:
+    return [summary_serialiser(object) for object in objects]
 
 def shared_summary_serialiser(record: dict, summary: dict, sender: dict) -> dict:
     """

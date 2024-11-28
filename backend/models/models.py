@@ -1,6 +1,6 @@
 import datetime
 from pydantic import BaseModel, EmailStr, validator
-from typing import Optional
+from typing import Optional, Dict
 from pydantic_extra_types import phone_numbers
 import uuid
 
@@ -25,7 +25,9 @@ class Summary(BaseModel):
     userId: str
     type: str
     uploadType: str
+    title: str
     initialData: Optional[str] = None
+    filedata: Optional[Dict[str, str]] = None 
     outputData: Optional[str] = None
     createdAt: datetime.datetime = datetime.datetime.now(datetime.UTC)
     updatedAt: datetime.datetime = datetime.datetime.now(datetime.UTC)
