@@ -80,6 +80,18 @@ async def create_summary(summary_id: str, _ = Depends(verify_token)):
     except ServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     
+@router.post("/summary/regenerate/{summary_id}", status_code=status.HTTP_201_CREATED)
+async def regenerate_summary(
+    summary_id: str, 
+    feedback: str = Body(...),
+    _ = Depends(verify_token)
+):
+    try:
+        res = service_regenrate_summary(summary_id, feedback)
+        return {"status": "OK", "result": res}
+    except ServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
 @router.get("/download/{file_id}")
 async def download_file(file_id: str):
     try:
