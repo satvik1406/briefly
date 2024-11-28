@@ -9,10 +9,6 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
   IconButton,
 } from '@mui/material';
@@ -87,11 +83,11 @@ const SummariesList = ({onNewSummaryClick}) => {
   };
 
   const handleViewSummary = (summary) => {
-    setSelectedSummary(summary); // Open dialog with selected summary
+    setSelectedSummary(summary); // Set the selected summary for detailed view
   };
 
-  const handleCloseDialog = () => {
-    setSelectedSummary(null); // Close dialog
+  const handleBackToList = () => {
+    setSelectedSummary(null); // Go back to list view
   };
 
   if (loading) {
@@ -113,16 +109,39 @@ const SummariesList = ({onNewSummaryClick}) => {
     return <Alert severity="error">{error}</Alert>;
   }
 
-  if (!summaries.length) {
+  if (selectedSummary) {
+    // Render detailed view
     return (
-      <Box sx={{ textAlign: 'center', mt: 4 }}>
-        <Typography variant="h6" color="textSecondary">
-          No summaries found. Create a new summary to get started!
+      <Box sx={{ p: 2 }}>
+        <Typography variant="h4" sx={{ mb: 2 }}>
+          {selectedSummary.title || 'Untitled Summary'}
         </Typography>
+        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+          Type: {selectedSummary.type || 'General'}
+        </Typography>
+        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+          Created At: {new Date(selectedSummary.createdAt).toLocaleString()}
+        </Typography>
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Input Data:
+        </Typography>
+        <Typography variant="body1" sx={{ mt: 1, whiteSpace: 'pre-wrap', bgcolor: 'grey.100', p: 2 }}>
+          {selectedSummary.initialData || 'No initial data available.'}
+        </Typography>
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Output Data:
+        </Typography>
+        <Typography variant="body1" sx={{ mt: 1, whiteSpace: 'pre-wrap', bgcolor: 'grey.50', p: 2 }}>
+          {selectedSummary.outputData || 'No content available for this summary.'}
+        </Typography>
+        <Button variant="contained" color="primary" sx={{ mt: 3 }} onClick={handleBackToList}>
+          Back
+        </Button>
       </Box>
     );
   }
 
+  // Render list view
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h4" sx={{ mb: 2 }}>
@@ -198,29 +217,6 @@ const SummariesList = ({onNewSummaryClick}) => {
           </Grid>
         ))}
       </Grid>
-
-      {/* Dialog for Viewing Summary */}
-      {selectedSummary && (
-        <Dialog open={Boolean(selectedSummary)} onClose={handleCloseDialog} fullWidth maxWidth="sm">
-          <DialogTitle>{selectedSummary.title || 'Untitled Summary'}</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-              Type: {selectedSummary.type || 'General'}
-            </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-              Created At: {new Date(selectedSummary.createdAt).toLocaleString()}
-            </Typography>
-            <Typography variant="body1" sx={{ mt: 2, whiteSpace: 'pre-wrap' }}>
-              {selectedSummary.outputData || 'No content available.'}
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog} color="primary">
-              Close
-            </Button>
-          </DialogActions>
-        </Dialog>
-      )}
     </Box>
   );
 };
