@@ -32,11 +32,7 @@ const Navbar = () => {
             <Button color="inherit">Contact</Button>
             </Box> */}
 
-            {/* Right Section: Profile or Action Buttons */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {/* <Button variant="outlined" color="inherit" sx={{ borderColor: 'white' }}>
-                Login
-            </Button> */}
             <Tooltip title="Logout" arrow placement="bottom" sx={{ borderColor: 'white' }}>
                 <IconButton 
                     onClick={logout}

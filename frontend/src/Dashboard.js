@@ -38,13 +38,14 @@ const Dashboard = () => {
 
   const handleNewSummary = async (newSummary) => {
     try {
-      debugger;
+      setOpenNewDialog(false);
       const response = await getUserSummaries(newSummary.userId);
       if (response.status !== "OK") {
         throw new Error('Failed to fetch summaries');
       }
       const data = response.result;
       setSummaries(data);
+
     } catch (error) {
       console.error('Error creating summary:', error);
       // Handle error appropriately
@@ -126,10 +127,7 @@ const Dashboard = () => {
         <NewSummaryDialog
           open={openNewDialog}
           onClose={() => setOpenNewDialog(false)}
-          onCreate={(summary) => {
-            handleNewSummary(summary);
-            setOpenNewDialog(false);
-          }}
+          onCreate={(summary) => handleNewSummary(summary)}
         />
       </Box>
     </>

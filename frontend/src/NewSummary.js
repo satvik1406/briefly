@@ -131,8 +131,8 @@ const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
         }
       
         handleReset();
-        onCreateSuccess(createdSummary);
         onClose();
+        onCreateSuccess(createdSummary);
       } catch (error) {
         console.error('Error creating summary:', error);
       }

@@ -25,7 +25,7 @@ class Summary(BaseModel):
     userId: str
     type: str
     uploadType: str
-    title: str
+    title: Optional[str] = None
     initialData: Optional[str] = None
     filedata: Optional[Dict[str, str]] = None 
     outputData: Optional[str] = None
