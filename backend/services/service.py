@@ -15,7 +15,8 @@ SECRET_KEY = "your_secret_key"
 
 def create_access_token(data: dict, expires_delta: datetime.timedelta):
     to_encode = data.copy()
-    expire = datetime.datetime.now(datetime.timezone.UTC) + expires_delta
+    expire = datetime.datetime.now(datetime.timezone.UTC
+                                   ) + expires_delta
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
     return encoded_jwt

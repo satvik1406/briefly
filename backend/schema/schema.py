@@ -1,3 +1,6 @@
+
+import datetime
+
 def user_serialiser(object) -> dict:
     return {
         "id": str(object["_id"]),
@@ -39,13 +42,14 @@ def shared_summary_serialiser(record: dict, summary: dict, sender: dict) -> dict
     # Call summary_serialiser for the summary content
     serialized_summary = summary_serialiser(summary)
     
+    shared_at = record.get("shared_at", datetime.datetime.now())
     return {
-        "id": serialized_summary["id"],  # Use the summary ID from the serialized summary
-        "title": serialized_summary.get("type", "Untitled Summary"),  # Use type as title
-        "content": serialized_summary.get("outputData", "No content available"),  # Use outputData as content
-        "inputContent": serialized_summary.get("initialData", "No initial data available"),  # Use initialData as input content
-        "sharedBy": sender.get("email", "Unknown"),  # Sender's email
-        "sharedAt": datetime.strftime(
-            record.get("shared_at", datetime.now()), "%B %d, %Y"
-        ) if isinstance(record.get("shared_at"), datetime) else "Invalid Date",  # Formatted shared date
+        "id": serialized_summary["id"],
+        "title": serialized_summary.get("type", "Untitled Summary"),
+        "content": serialized_summary.get("outputData", "No content available"),
+        "inputContent": serialized_summary.get("initialData", "No initial data available"),
+        "sharedBy": sender.get("email", "Unknown") if sender else "Unknown",
+        "sharedAt": datetime.datetime.strftime(
+            shared_at, "%B %d, %Y"
+        ) if isinstance(shared_at, datetime.datetime) else "Invalid Date",
     }
