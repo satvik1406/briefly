@@ -2,12 +2,13 @@ import uuid
 from models.models import User, Summary
 from config.database import users_collection_name, summaries_collection_name, grid_fs
 from schema.schema import *
-from services.call_to_AI import call_to_AI
+from services.call_to_AI import call_to_AI, regenerate_feedback
 from exceptions import ServiceError, NotFoundError, ValidationError
 from gridfs import GridFS
 import datetime
 import jwt
 from fastapi import UploadFile
+import re
 
 SECRET_KEY = "your_secret_key"
 
@@ -54,8 +55,8 @@ def service_user_summaries(userId: str) -> list:
 def service_create_summary(summary: Summary):
     summary_data = dict(summary)
     outputData = call_to_AI(summary_data['type'],summary_data['initialData'])
-    title = clean(outputData.split("Title")[1].split("Summary")[0])
-    Summary = clean(outputData.split("Summary")[1])
+    title = clean(outputData.split("Title:")[1].split("Summary:")[0])
+    Summary = clean(outputData.split("Summary:")[1])
     summary_data['outputData'] = Summary
     summary_data['Title'] = title
     
@@ -64,8 +65,8 @@ def service_create_summary(summary: Summary):
     return {"message": "Summary created successfully", "summary_id": summary_data['_id']}
 
 def clean(data):
-    #  TO DO: Cleanup clean function
-    return data.strip().strip('*').strip().strip('*').strip('<').strip('>').strip('/')
+    # Remove special characters from the start and end of the string
+    return re.sub(r'^[^\w]+|[^\w]+$', '', data)
 
 async def service_process_file(file: UploadFile, summary: Summary):
     file_contents = await file.read()
@@ -86,8 +87,8 @@ async def service_process_file(file: UploadFile, summary: Summary):
 
     summary_data = dict(summary)
     outputData = call_to_AI(summary_data['type'],summary_data['initialData'])
-    title = clean(outputData.split("Title")[1].split("Summary")[0])
-    Summary = clean(outputData.split("Summary")[1])
+    title = clean(outputData.split("Title:")[1].split("Summary:")[0])
+    Summary = clean(outputData.split("Summary:")[1])
     summary_data['outputData'] = Summary
     summary_data['Title'] = title
 
@@ -109,3 +110,19 @@ def service_delete_summary(summary_id: str):
     summaries_collection_name.delete_one({"_id": summary_id})
 
     return {"message": "Summary deleted successfully"}
+
+def service_regenrate_summary(summary_id: str, feedback: str):
+    summary = summaries_collection_name.find_one({"_id": summary_id})
+    if not summary:
+        raise NotFoundError("Summary not found")
+
+    summary_data = dict(summary)
+    outputData = regenerate_feedback(summary_data, feedback)
+    title = clean(outputData.split("Title:")[1].split("Summary:")[0])
+    Summary = clean(outputData.split("Summary:")[1])
+    summary_data['outputData'] = Summary
+    summary_data['Title'] = title
+    summaries_collection_name.update_one({"_id": summary_id}, {"$set": summary_data})
+    return {"message": "Summary regenerated successfully"}
+
+# service_regenrate_summary("116cc127-17eb-4801-9c2d-ac6a044b05fa", "Write a shorter summary")
