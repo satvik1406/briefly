@@ -69,6 +69,25 @@ def clean(data):
     # Remove special characters from the start and end of the string
     return re.sub(r'^[^\w]+|[^\w]+$', '', data)
 
+def extract_text_from_file(file: UploadFile, contents: bytes) -> str:
+    """Extract text from various file types."""
+    try:
+        if file.filename.endswith('.pdf'):
+            return extract_text_from_pdf(file)
+        elif file.filename.endswith(('.txt', '.py', '.js', '.html', '.css', '.json', '.md')):
+            return contents.decode('utf-8')
+        elif file.filename.endswith(('.doc', '.docx')):
+            # You'll need python-docx library for this
+            raise NotImplementedError("Word document support not implemented yet")
+        else:
+            return contents.decode('utf-8')
+    except UnicodeDecodeError:
+        # Try different encodings if UTF-8 fails
+        try:
+            return contents.decode('latin-1')
+        except UnicodeDecodeError:
+            raise ServiceError("Unable to decode file contents", status_code=400)
+
 async def service_process_file(file: UploadFile, summary: Summary):
     file_contents = await file.read()
 
@@ -86,8 +105,7 @@ async def service_process_file(file: UploadFile, summary: Summary):
     metadata["file_id"] = str(file_id)
     summary.filedata = metadata
 
-    initialData = extract_text_from_pdf(file)
-
+    initialData = extract_text_from_file(file, file_contents)
     summary_data = dict(summary)
     outputData = call_to_AI(summary_data['type'], initialData)
     title = clean(outputData.split("Title:")[1].split("Summary:")[0])
