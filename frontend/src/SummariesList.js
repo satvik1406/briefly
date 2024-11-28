@@ -41,6 +41,7 @@ const SummariesList = () => {
   const [errorMessage, setErrorMessage] = useState(""); 
   const [sharedSummaries, setSharedSummaries] = useState([]);
 
+
   const fetchSummaries = async () => {
     try {
       setLoading(true);
@@ -172,6 +173,8 @@ const SummariesList = () => {
       <Typography variant="h4" sx={{ mb: 4 }}>
         Your Summaries
       </Typography>
+        {/* Dropdown Filter */}
+
       <Grid container spacing={4}>
         {summaries.map((summary) => (
           <Grid item xs={12} sm={6} md={4} key={summary.id}>
