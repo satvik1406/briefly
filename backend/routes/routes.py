@@ -48,8 +48,8 @@ async def create_summary(obj: Summary = Body(...),  _ = Depends(verify_token)):
         res = service_create_summary(obj)
         return {"status": "OK", "result": res}
     except ServiceError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
-    
+        raise HTTPException(status_code=e.status_code, detail=e.detail)    
+
 @router.post("/summary/upload", status_code=status.HTTP_201_CREATED)
 async def create_summary_upload(
     userId: str = Form(...),
@@ -95,3 +95,35 @@ async def download_file(file_id: str):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.post("/summary/share", status_code=status.HTTP_200_OK)
+async def share_summary(summary_id: str = Body(...), recipient: str = Body(...), _ = Depends(verify_token)):
+    """
+    Route to share a summary with another user.
+    :param summary_id: ID of the summary to be shared
+    :param recipient: Recipient username or email
+    :return: Success or failure response
+    """
+    try:
+        # Call the service function to share the summary
+        res = service_share_summary(summary_id, recipient)
+        return {"status": "OK", "result": res}
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    
+@router.get("/user/{user_id}/shared-summaries", status_code=status.HTTP_200_OK)
+async def get_shared_summaries(user_id: str, _ = Depends(verify_token)):
+    """
+    Fetch all summaries shared with the specified user.
+    """
+    try:
+        summaries = service_get_shared_summaries(user_id)
+        print(summaries)
+        return {"status": "OK", "result": summaries}
+    except NotFoundError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to fetch shared summaries")
+    

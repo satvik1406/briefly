@@ -11,10 +11,14 @@ import {
   Alert,
   TextField,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogActions,
+  DialogContent
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from './App';
-import { getUserSummaries, deleteUserSummary } from './RequestService'; // Import the delete function
+import { getUserSummaries, deleteUserSummary,shareSummary,getUserSharedSummaries } from './RequestService'; // Import the delete function
 import {Search, Add} from '@mui/icons-material';
 import SummaryToggle from './SummaryToggle';
 
@@ -42,6 +46,12 @@ const SummariesList = ({onNewSummaryClick}) => {
       summary.outputData.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
+  const [sharingSummary, setSharingSummary] = useState(null); // State for sharing summary
+  const [recipient, setRecipient] = useState(''); // Recipient email/username
+  const [sharing, setSharing] = useState(false); // Sharing state
+  const [errorMessage, setErrorMessage] = useState(""); 
+  const [sharedSummaries, setSharedSummaries] = useState([]);
+
 
   const fetchSummaries = async () => {
     try {
@@ -63,9 +73,32 @@ const SummariesList = ({onNewSummaryClick}) => {
     }
   };
 
+  const fetchSharedSummaries = async () => {
+    try {
+      setLoading(true);
+      const response = await getUserSharedSummaries(userData.id);
+      if (response.status !== 'OK') {
+        throw new Error('Failed to fetch shared summaries');
+      }
+      const data = response.result;
+
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid response format: result is not an array');
+      }
+      setSharedSummaries(data);
+    } catch (err) {
+      console.error('Error fetching shared summaries:', err);
+      setError('Failed to load shared summaries. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (userData) {
       fetchSummaries();
+      fetchSharedSummaries();
+      console.log("functions called");
     }
   }, [userData]);
 
@@ -81,6 +114,32 @@ const SummariesList = ({onNewSummaryClick}) => {
       setDeleting(false);
     }
   };
+  const handleShareSummary = (summary) => {
+    setSharingSummary(summary); // Open the Share dialog
+  };
+
+  const handleSendShare = async () => {
+    if (!recipient) {
+      alert('Please enter a recipient email or username.');
+      return;
+    }
+
+    try {
+      setSharing(true);
+      await shareSummary(sharingSummary.id, recipient); // Call the share API
+      alert(`Summary shared successfully with ${recipient}`);
+      setSharingSummary(null);
+      setRecipient('');
+    } catch (err) {
+      console.log(err);
+      console.error('Error sharing summary:', err);
+      const errorMessage= err.detail ;
+    
+      setErrorMessage(errorMessage);
+    } finally {
+      setSharing(false);
+    }
+  };
 
   const handleViewSummary = (summary) => {
     setSelectedSummary(summary); // Set the selected summary for detailed view
@@ -88,6 +147,12 @@ const SummariesList = ({onNewSummaryClick}) => {
 
   const handleBackToList = () => {
     setSelectedSummary(null); // Go back to list view
+    setSharingSummary(null); // Close share dialog
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedSummary(null); // Close dialog
+    setSharingSummary(null); // Close share dialog
   };
 
   if (loading) {
@@ -212,11 +277,67 @@ const SummariesList = ({onNewSummaryClick}) => {
                 >
                   {deleting ? 'Deleting...' : 'Delete'}
                 </Button>
+                <Button size="small" color="primary" onClick={() => handleShareSummary(summary)}>
+                  Share
+                </Button>
               </CardActions>
             </StyledCard>
           </Grid>
         ))}
       </Grid>
+
+      {/* Dialog for Viewing Summary */}
+      {selectedSummary && (
+        <Dialog open={Boolean(selectedSummary)} onClose={handleCloseDialog} fullWidth maxWidth="sm">
+          <DialogTitle>{selectedSummary.title || 'Untitled Summary'}</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              Created At: {(Date(selectedSummary.createdAt).split(/[G]/))[0].split("-")}
+            </Typography>
+            <Typography variant="body1" sx={{ mt: 2, whiteSpace: 'pre-wrap' }}>
+              {selectedSummary.content || 'No content available.'}
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog} color="primary">
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
+       {/* Dialog for Sharing Summary */}
+       {sharingSummary && (
+        <Dialog open={Boolean(sharingSummary)} onClose={handleCloseDialog} fullWidth maxWidth="sm">
+          <DialogTitle>Share Summary</DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              Sharing: {sharingSummary.title || 'Untitled Summary'}
+            </Typography>
+            <TextField
+              fullWidth
+              label="Recipient Email or Username"
+              variant="outlined"
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+             {/* Error Message */}
+      {errorMessage && (
+        <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+          {errorMessage}
+        </Typography>
+      )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog} color="secondary">
+              Cancel
+            </Button>
+            <Button onClick={handleSendShare} color="primary" disabled={sharing}>
+              {sharing ? 'Sharing...' : 'Share'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };

@@ -102,3 +102,49 @@ export const deleteUserSummary = async (summaryId) => {
     throw error.response?.data || 'Error deleting summary';
   }
 };
+
+export const shareSummary = async (summaryId, recipient) => {
+  try {
+    const token = localStorage.getItem('auth_token'); // Get auth token
+    console.log("Request body:", {
+      summary_id: summaryId,
+      recipient: recipient,
+    });
+    const response = await axios.post(
+      `${API_BASE_URL}/summary/share`, // Adjust the API endpoint as per your backend
+      {
+        summary_id: summaryId, // Match the backend key "summary_id"
+        recipient: recipient,  // Match the backend key "recipient"
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, // Include authorization token
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    return response.data; // Return the response data
+  } catch (error) {
+    console.error('Error sharing summary:', error.response?.data || error.message);
+    throw error.response?.data || 'Error sharing summary';
+  }
+};
+
+
+export const getUserSharedSummaries = async (userId) => {
+  try {
+    const token = localStorage.getItem('auth_token'); // Ensure auth token is available
+    const response = await axios.get(`${API_BASE_URL}/user/${userId}/shared-summaries`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    console.log("Shared Summaries fetched from API:", response.data); // Debug API response
+    return response.data; // Return the fetched data
+  } catch (error) {
+    console.error('Error fetching shared summaries:', error.response?.data || error.message);
+    throw error.response?.data || 'Error fetching shared summaries';
+  }
+};
