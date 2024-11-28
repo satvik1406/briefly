@@ -13,10 +13,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  TextField,
+  IconButton,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from './App';
 import { getUserSummaries, deleteUserSummary } from './RequestService'; // Import the delete function
+import {Search, Add} from '@mui/icons-material';
+import SummaryToggle from './SummaryToggle';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   boxShadow: theme.shadows[3],
@@ -27,13 +31,21 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-const SummariesList = () => {
+const SummariesList = ({onNewSummaryClick}) => {
   const { userData } = useAuth(); // Get user info from Auth context
   const [summaries, setSummaries] = useState([]);
   const [selectedSummary, setSelectedSummary] = useState(null); // State for the selected summary
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [deleting, setDeleting] = useState(false); // Loading state for deletion
+  const [deleting, setDeleting] = useState(false);
+  
+  const filteredSummaries = summaries.filter((summary) => {
+    return (
+      summary.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      summary.outputData.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
 
   const fetchSummaries = async () => {
     try {
@@ -112,12 +124,50 @@ const SummariesList = () => {
   }
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h4" sx={{ mb: 4 }}>
+    <Box sx={{ p: 2 }}>
+      <Typography variant="h4" sx={{ mb: 2 }}>
         Your Summaries
       </Typography>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <TextField
+          variant="outlined"
+          size="small"
+          placeholder="Search summaries..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          fullWidth
+          sx={{
+            width: '100%',
+            maxWidth: '400px', // Limit width of the search bar
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '20px',
+            },
+          }}
+        />
+        <IconButton sx={{ ml: 1 }}>
+          <Search />
+        </IconButton>
+
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Add />}
+          sx={{
+            ml: 2,
+            whiteSpace: 'nowrap',
+            height: '40px',
+          }}
+          onClick={onNewSummaryClick}
+        >
+          New Summary
+        </Button>
+      </Box>
+
+      <SummaryToggle onToggleChange={(view) => console.log('Selected View:', view)} />
+
       <Grid container spacing={4}>
-        {summaries.map((summary) => (
+        {filteredSummaries.map((summary) => (
           <Grid item xs={12} sm={6} md={4} key={summary.id}>
             <StyledCard>
               <CardContent>
@@ -128,7 +178,7 @@ const SummariesList = () => {
                   {summary.type || 'General'} - {new Date(summary.createdAt).toLocaleDateString()}
                 </Typography>
                 <Typography variant="body1" sx={{ height: '60px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {summary.content || 'No content available for this summary.'}
+                  {summary.outputData || 'No content available for this summary.'}
                 </Typography>
               </CardContent>
               <CardActions>
@@ -161,7 +211,7 @@ const SummariesList = () => {
               Created At: {new Date(selectedSummary.createdAt).toLocaleString()}
             </Typography>
             <Typography variant="body1" sx={{ mt: 2, whiteSpace: 'pre-wrap' }}>
-              {selectedSummary.content || 'No content available.'}
+              {selectedSummary.outputData || 'No content available.'}
             </Typography>
           </DialogContent>
           <DialogActions>

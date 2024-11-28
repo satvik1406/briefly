@@ -6,6 +6,7 @@ import SummaryContent from './SummaryContent';
 import NewSummaryDialog from './NewSummary';
 import SummariesList from './SummariesList';
 import { getUserSummaries } from './RequestService';
+import Navbar from './Navbar';
 
 const Dashboard = () => {
   const { userData, loading: authLoading } = useAuth();
@@ -94,38 +95,44 @@ const Dashboard = () => {
   const selectedSummary = summaries.find((summary) => summary.id === selectedSummaryId);
 
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      height: '100vh',
-      bgcolor: 'grey.50'
-    }}>
-      <Sidebar
-        summaries={summaries}
-        onSummarySelect={handleSummarySelect}
-        onNewSummaryClick={() => setOpenNewDialog(true)}
-        userName={`${userData.firstName} ${userData.lastName}`}
-      />
+    <>
+      <Navbar />
+      <Box sx={{ 
+        display: 'flex', 
+        height: '100vh',
+        bgcolor: 'grey.50'
+      }}>
+        {/* <Sidebar
+          summaries={summaries}
+          onSummarySelect={handleSummarySelect}
+          onNewSummaryClick={() => setOpenNewDialog(true)}
+          userName={`${userData.firstName} ${userData.lastName}`}
+        /> */}
 
-      {/* <Container sx={{ flexGrow: 1, p: 3 }}>
-        <SummaryContent 
-          selectedSummary={selectedSummary}
-          onDelete={handleDeleteSummary} 
+        {/* <Container sx={{ flexGrow: 1, p: 3 }}>
+          <SummaryContent 
+            selectedSummary={selectedSummary}
+            onDelete={handleDeleteSummary} 
+          />
+        </Container> */}
+
+        <Container sx={{ flexGrow: 10, py: 4 }}>
+          <SummariesList 
+          summaries={summaries} 
+          onNewSummaryClick={() => setOpenNewDialog(true)}
+          />
+        </Container>
+
+        <NewSummaryDialog
+          open={openNewDialog}
+          onClose={() => setOpenNewDialog(false)}
+          onCreate={(summary) => {
+            handleNewSummary(summary);
+            setOpenNewDialog(false);
+          }}
         />
-      </Container> */}
-
-      <Container sx={{ flexGrow: 1, py: 4 }}>
-        <SummariesList summaries={summaries} />
-      </Container>
-
-      <NewSummaryDialog
-        open={openNewDialog}
-        onClose={() => setOpenNewDialog(false)}
-        onCreate={(summary) => {
-          handleNewSummary(summary);
-          setOpenNewDialog(false);
-        }}
-      />
-    </Box>
+      </Box>
+    </>
   );
 };
 

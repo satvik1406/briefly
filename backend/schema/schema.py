@@ -19,7 +19,9 @@ def summary_serialiser(object) -> dict:
         "type": str(object["type"]),
         "uploadType": str(object["uploadType"]),
         "initialData": str(object["type"]),
-        "outputData": str(object["outputData"])
+        "outputData": str(object["outputData"]),
+        "createdAt": str(object["createdAt"]),
+        "title": str(object["title"])
     }
 
 def summary_list_serialiser(objects) -> list:

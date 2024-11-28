@@ -79,3 +79,19 @@ async def create_summary(summary_id: str, _ = Depends(verify_token)):
         return {"status": "OK", "result": res}
     except ServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+    
+@router.get("/download/{file_id}")
+async def download_file(file_id: str):
+    try:
+        grid_out = grid_fs.get(ObjectId(file_id))
+        if not grid_out:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        # Stream the file back to the client
+        return StreamingResponse(
+            grid_out, 
+            media_type=grid_out.content_type,
+            headers={"Content-Disposition": f"attachment; filename={grid_out.filename}"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
