@@ -120,8 +120,6 @@ const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
         'initialData': inputMethod === 'type' ? content : file,
       };
 
-      debugger;
-
       try {
         var createdSummary;
         if(inputMethod == 'upload') {

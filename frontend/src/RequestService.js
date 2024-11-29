@@ -33,8 +33,8 @@ export const getUserSummaries = async (userId) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error verifying user:', error.response?.data || error.message);
-    throw error.response?.data || 'Error verifying user';
+    console.error('Error fetching summaries:', error.response?.data || error.message);
+    throw error.response?.data || 'Error fetching summaries';
   }
 };
 
@@ -103,6 +103,29 @@ export const deleteUserSummary = async (summaryId) => {
   }
 };
 
+export const regenerateUserSummary = async (summaryData) => {
+  try {
+    const token = localStorage.getItem('auth_token');
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    };
+
+    const response = await axios.post(
+      `${API_BASE_URL}/summary/regenerate/${summaryData.summaryId}`,
+      summaryData.feedback,
+      { headers }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Error creating user summary:', error.response?.data || error.message);
+    throw error.response?.data || 'Error creating user summary';
+  }
+};
+
+
 export const shareSummary = async (summaryId, recipient) => {
   try {
     const token = localStorage.getItem('auth_token'); // Get auth token
@@ -148,3 +171,41 @@ export const getUserSharedSummaries = async (userId) => {
     throw error.response?.data || 'Error fetching shared summaries';
   }
 };
+
+export const getUserSummary = async (summaryId) => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await axios.get(`${API_BASE_URL}/summary/${summaryId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching summary for user:', error.response?.data || error.message);
+    throw error.response?.data || 'Error fetching summary for user';
+  }
+};
+
+export const getInputFile = async (fileId) => {
+  try {
+    const token = localStorage.getItem('auth_token');
+
+    // Fetch the file as a Blob
+    const response = await axios.get(`${API_BASE_URL}/download/${fileId}`, {
+      responseType: "blob", // Ensure Axios handles the response as binary data
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    // Create a Blob object from the response data
+    const blob = new Blob([response.data], { type: response.headers["content-type"] });
+    return blob
+  } catch (error) {
+    console.error("Error fetching or downloading file:", error.response?.data || error.message);
+    throw error.response?.data || "Error fetching or downloading file";
+  }
+};
+

@@ -11,10 +11,12 @@ from gridfs import GridFS
 from PyPDF2 import PdfReader
 import datetime
 import jwt
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile
 import re
 from fastapi import UploadFile
 import re
+from fastapi.responses import StreamingResponse
+from bson import ObjectId
 
 SECRET_KEY = "your_secret_key"
 
@@ -52,12 +54,6 @@ def service_verify_user(obj: User) -> dict:
     return {'auth_token': token, 'user': user_dict}  
 
 def service_user_summaries(userId: str) -> list:
-    summaries = summaries_collection_name.find({'userId': userId})
-    summary_list = summary_list_serialiser(summaries)
-    if not summary_list:
-        return []
-    
-    return summary_list
     summaries = summaries_collection_name.find({'userId': userId})
     summary_list = summary_list_serialiser(summaries)
     if not summary_list:
@@ -318,3 +314,30 @@ def extract_text_from_pdf(uploaded_file: UploadFile):
         page = pdf_reader.pages[page_num]
         text += page.extract_text()
     return text
+
+def service_get_summary(summary_id: str):
+    summary = summaries_collection_name.find_one({"_id": summary_id})
+    if not summary:
+        raise ValueError("Summary not found")
+
+    summary = summary_serialiser(summary)
+
+    return summary
+
+def service_download_file(file_id: str):
+    # Fetch the file from GridFS
+    grid_out = grid_fs.get(ObjectId(file_id))
+    if not grid_out:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # Stream the file in chunks
+    async def file_iterator():
+        while chunk := grid_out.read(1024 * 1024):  # 1 MB chunks
+            yield chunk
+
+    # Return the streamed file response
+    return StreamingResponse(
+        file_iterator(),
+        media_type=grid_out.content_type,
+            headers={"Content-Disposition": f"attachment; filename={grid_out.filename}"}
+    )

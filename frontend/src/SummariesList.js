@@ -18,9 +18,10 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from './App';
-import { getUserSummaries, deleteUserSummary,shareSummary,getUserSharedSummaries } from './RequestService'; // Import the delete function
+import { getUserSummaries, deleteUserSummary,shareSummary,getUserSharedSummaries, getUserSummary} from './RequestService'; // Import the delete function
 import {Search, Add} from '@mui/icons-material';
 import SummaryToggle from './SummaryToggle';
+import SelectedSummary from './SelectedSummary';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   boxShadow: theme.shadows[3],
@@ -141,6 +142,16 @@ const SummariesList = ({onNewSummaryClick}) => {
     }
   };
 
+  const handleSummaryRegenerate = async (summary) => {
+    try{
+       // Update the detailed view with the regenerated summary
+      const regeneratedSummary = await getUserSummary(summary.id); // Refresh the list of summaries
+      setSelectedSummary(regeneratedSummary.result);
+    } catch (err) {
+      console.error('Error regenerating summary:', err);
+    }
+  };
+
   const handleViewSummary = (summary) => {
     setSelectedSummary(summary); // Set the selected summary for detailed view
   };
@@ -175,34 +186,13 @@ const SummariesList = ({onNewSummaryClick}) => {
   }
 
   if (selectedSummary) {
-    // Render detailed view
+    // Render the SelectedSummary component
     return (
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h4" sx={{ mb: 2 }}>
-          {selectedSummary.title || 'Untitled Summary'}
-        </Typography>
-        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-          Type: {selectedSummary.type || 'General'}
-        </Typography>
-        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-          Created At: {new Date(selectedSummary.createdAt).toLocaleString()}
-        </Typography>
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Input Data:
-        </Typography>
-        <Typography variant="body1" sx={{ mt: 1, whiteSpace: 'pre-wrap', bgcolor: 'grey.100', p: 2 }}>
-          {selectedSummary.initialData || 'No initial data available.'}
-        </Typography>
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Output Data:
-        </Typography>
-        <Typography variant="body1" sx={{ mt: 1, whiteSpace: 'pre-wrap', bgcolor: 'grey.50', p: 2 }}>
-          {selectedSummary.outputData || 'No content available for this summary.'}
-        </Typography>
-        <Button variant="contained" color="primary" sx={{ mt: 3 }} onClick={handleBackToList}>
-          Back
-        </Button>
-      </Box>
+      <SelectedSummary
+        summary={selectedSummary}
+        onBack={handleBackToList}
+        onSummaryRegenerate={(summary) => handleSummaryRegenerate(summary)}
+      />
     );
   }
 

@@ -16,7 +16,7 @@ def user_list_serialiser(objects) -> list:
     return [user_serialiser(object) for object in objects]
 
 def summary_serialiser(object) -> dict:
-    return {
+    serialized_data =  {
         "id": str(object["_id"]),
         "userId": str(object["userId"]),
         "type": str(object["type"]),
@@ -26,6 +26,12 @@ def summary_serialiser(object) -> dict:
         "createdAt": str(object["createdAt"]),
         "title": str(object["title"])
     }
+
+    if "filedata" in object and object["filedata"]:
+        serialized_data["fileName"] = object["filedata"].get("filename", None)
+        serialized_data["fileId"] = object["filedata"].get("file_id", None)
+    
+    return serialized_data
 
 def summary_list_serialiser(objects) -> list:
     return [summary_serialiser(object) for object in objects]

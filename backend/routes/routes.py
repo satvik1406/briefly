@@ -4,6 +4,7 @@ from models.models import User, Summary
 from exceptions import *
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
+from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 security = HTTPBearer()
@@ -72,7 +73,7 @@ async def create_summary_upload(
         raise HTTPException(status_code=500, detail=str(e))
     
 @router.delete("/summary/{summary_id}", status_code=status.HTTP_201_CREATED)
-async def create_summary(summary_id: str, _ = Depends(verify_token)):
+async def delete_summary(summary_id: str, _ = Depends(verify_token)):
     try:
         print(summary_id)
         res = service_delete_summary(summary_id)
@@ -95,16 +96,8 @@ async def regenerate_summary(
 @router.get("/download/{file_id}")
 async def download_file(file_id: str):
     try:
-        grid_out = grid_fs.get(ObjectId(file_id))
-        if not grid_out:
-            raise HTTPException(status_code=404, detail="File not found")
-
-        # Stream the file back to the client
-        return StreamingResponse(
-            grid_out, 
-            media_type=grid_out.content_type,
-            headers={"Content-Disposition": f"attachment; filename={grid_out.filename}"}
-        )
+        res = service_download_file(file_id)
+        return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -138,4 +131,13 @@ async def get_shared_summaries(user_id: str, _ = Depends(verify_token)):
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to fetch shared summaries")
+    
+@router.get("/summary/{summary_id}", status_code=status.HTTP_201_CREATED)
+async def get_summary(summary_id: str, _ = Depends(verify_token)):
+    try:
+        print(summary_id)
+        res = service_get_summary(summary_id)
+        return {"status": "OK", "result": res}
+    except ServiceError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
     
