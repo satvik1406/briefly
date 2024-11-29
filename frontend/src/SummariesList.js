@@ -263,7 +263,16 @@ const SummariesList = ({onNewSummaryClick}) => {
           <Grid item xs={12} sm={6} md={4} key={summary.id}>
             <StyledCard>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    mb: 1, 
+                    fontWeight: 'bold', 
+                    whiteSpace: 'nowrap', 
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis' 
+                  }}
+                >
                   {summary.title || 'Untitled Summary'}
                 </Typography>
                 <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>

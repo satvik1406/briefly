@@ -7,6 +7,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { Download, InsertDriveFile } from '@mui/icons-material';
+import MarkdownRenderer from './MarkdownRenderer';
 import { regenerateUserSummary, getInputFile } from './RequestService';
 
 const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
@@ -97,9 +98,7 @@ const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
             <Typography variant="h6" sx={{ mt: 2 }}>
                 Output Data:
             </Typography>
-            <Typography variant="body1" sx={{ mt: 1, whiteSpace: 'pre-wrap', bgcolor: 'grey.50', p: 2 }}>
-                {summary.outputData || 'No content available for this summary.'}
-            </Typography>
+            <MarkdownRenderer content={summary.outputData || 'No content available.'} />
 
         {/* Feedback Text Field */}
         {isRegenerating && (

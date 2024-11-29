@@ -10,7 +10,6 @@ import {
   Typography,
   Button,
   TextField,
-  Box,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { Description, Code, Article, UploadFile } from '@mui/icons-material';
@@ -122,7 +121,7 @@ const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
 
       try {
         var createdSummary;
-        if(inputMethod == 'upload') {
+        if(inputMethod === 'upload') {
           createdSummary = await userSummaryUpload(newSummary);
         } else {
           createdSummary = await createUserSummary(newSummary);
