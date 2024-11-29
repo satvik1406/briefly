@@ -40,6 +40,7 @@ const SummariesList = ({onNewSummaryClick}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [currentView, setCurrentView] = useState('my-summaries');
   
   const filteredSummaries = summaries.filter((summary) => {
     return (
@@ -78,11 +79,12 @@ const SummariesList = ({onNewSummaryClick}) => {
     try {
       setLoading(true);
       const response = await getUserSharedSummaries(userData.id);
+      console.log("response:",response);
       if (response.status !== 'OK') {
         throw new Error('Failed to fetch shared summaries');
       }
       const data = response.result;
-
+      console.log("data:",data);
       if (!Array.isArray(data)) {
         throw new Error('Invalid response format: result is not an array');
       }
@@ -97,11 +99,13 @@ const SummariesList = ({onNewSummaryClick}) => {
 
   useEffect(() => {
     if (userData) {
-      fetchSummaries();
-      fetchSharedSummaries();
-      console.log("functions called");
+      if (currentView === 'my-summaries') {
+        fetchSummaries();
+      } else {
+        fetchSharedSummaries();
+      }
     }
-  }, [userData]);
+  }, [currentView, userData]);
 
   const handleDeleteSummary = async (summaryId) => {
     try {
@@ -166,6 +170,13 @@ const SummariesList = ({onNewSummaryClick}) => {
     setSharingSummary(null); // Close share dialog
   };
 
+  const filteredSharedSummaries = sharedSummaries.filter((summary) => {
+    return (
+      summary.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      summary.content.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
   if (loading) {
     return (
       <Box
@@ -200,7 +211,7 @@ const SummariesList = ({onNewSummaryClick}) => {
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h4" sx={{ mb: 2 }}>
-        Your Summaries
+        {currentView === 'my-summaries' ? 'Your Summaries' : 'Shared Summaries'}
       </Typography>
 
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -238,10 +249,17 @@ const SummariesList = ({onNewSummaryClick}) => {
         </Button>
       </Box>
 
-      <SummaryToggle onToggleChange={(view) => console.log('Selected View:', view)} />
+      <SummaryToggle 
+        currentView={currentView}
+        onToggleChange={(view) => {
+          console.log('Changing view to:', view); // Debug log
+          setCurrentView(view === 'my-summaries' ? 'my-summaries' : 'shared-summaries');
+          setSearchQuery(''); // Reset search when switching views
+        }} 
+      />
 
       <Grid container spacing={4}>
-        {filteredSummaries.map((summary) => (
+        {(currentView === 'my-summaries' ? filteredSummaries : filteredSharedSummaries).map((summary) => (
           <Grid item xs={12} sm={6} md={4} key={summary.id}>
             <StyledCard>
               <CardContent>
@@ -249,27 +267,36 @@ const SummariesList = ({onNewSummaryClick}) => {
                   {summary.title || 'Untitled Summary'}
                 </Typography>
                 <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                  {summary.type || 'General'} - {new Date(summary.createdAt).toLocaleDateString()}
+                  {summary.type || 'General'} - {new Date(summary.sharedAt || summary.createdAt).toLocaleDateString()}
                 </Typography>
+                {currentView === 'shared-summaries' && (
+                  <Typography variant="body2" color="primary" sx={{ mb: 1 }}>
+                    Shared by: {summary.sharedBy}
+                  </Typography>
+                )}
                 <Typography variant="body1" sx={{ height: '60px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {summary.outputData || 'No content available for this summary.'}
+                  {summary.content || summary.outputData || 'No content available for this summary.'}
                 </Typography>
               </CardContent>
               <CardActions>
                 <Button size="small" color="primary" onClick={() => handleViewSummary(summary)}>
                   View
                 </Button>
-                <Button
-                  size="small"
-                  color="secondary"
-                  onClick={() => handleDeleteSummary(summary.id)}
-                  disabled={deleting} // Disable button while deleting
-                >
-                  {deleting ? 'Deleting...' : 'Delete'}
-                </Button>
-                <Button size="small" color="primary" onClick={() => handleShareSummary(summary)}>
-                  Share
-                </Button>
+                {currentView === 'my-summaries' && (
+                  <>
+                    <Button
+                      size="small"
+                      color="secondary"
+                      onClick={() => handleDeleteSummary(summary.id)}
+                      disabled={deleting}
+                    >
+                      {deleting ? 'Deleting...' : 'Delete'}
+                    </Button>
+                    <Button size="small" color="primary" onClick={() => handleShareSummary(summary)}>
+                      Share
+                    </Button>
+                  </>
+                )}
               </CardActions>
             </StyledCard>
           </Grid>
