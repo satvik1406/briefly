@@ -74,7 +74,7 @@ async def create_summary_upload(
 @router.delete("/summary/{summary_id}", status_code=status.HTTP_201_CREATED)
 async def create_summary(summary_id: str, _ = Depends(verify_token)):
     try:
-        print(summary_id)
+        #print(summary_id)
         res = service_delete_summary(summary_id)
         return {"status": "OK", "result": res}
     except ServiceError as e:
@@ -132,7 +132,6 @@ async def get_shared_summaries(user_id: str, _ = Depends(verify_token)):
     """
     try:
         summaries = service_get_shared_summaries(user_id)
-        print(summaries)
         return {"status": "OK", "result": summaries}
     except NotFoundError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

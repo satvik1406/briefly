@@ -20,7 +20,7 @@ SECRET_KEY = "your_secret_key"
 
 def create_access_token(data: dict, expires_delta: datetime.timedelta):
     to_encode = data.copy()
-    expire = datetime.datetime.now(datetime.timezone.UTC
+    expire = datetime.datetime.now(datetime.timezone.utc
                                    ) + expires_delta
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
@@ -219,32 +219,27 @@ def service_get_shared_summaries(user_id: str):
     try:
         # Query shared summaries for the given user
         shared_records = shared_summaries_collection_name.find({"recipient_id": user_id})
-        shared_summaries = list(shared_records)
-
-        if not shared_summaries:
-            raise NotFoundError("No summaries shared with this user")
-
-        # Fetch summary details and include sharedBy information
+        
         result = []
-        for record in shared_summaries:
-            summary_id = record.get("summary_id")
-            sender_id = record.get("sender_id")
-
-            # Fetch summary details
-            summary = summaries_collection_name.find_one({"_id": summary_id})
+        for shared_record in shared_records:
+            # Get the original summary
+            summary = summaries_collection_name.find_one({"_id": shared_record["summary_id"]})
             if not summary:
                 continue
 
-            # Fetch sender details
-            sender = users_collection_name.find_one({"_id": sender_id})
+            # Get the sender's information
+            sender = users_collection_name.find_one({"_id": shared_record["sender_id"]})
+            if not sender:
+                continue
 
-            # Add summary with additional details
-            result.append(shared_summary_serialiser(record, summary, sender))
+            # Use the serializer to format the data
+            shared_summary = shared_summary_serialiser(shared_record, summary, sender)
+            result.append(shared_summary)
 
         return result
 
     except Exception as e:
-        raise NotFoundError(f"Failed to fetch shared summaries: {str(e)}")
+        raise ServiceError(f"Failed to fetch shared summaries: {str(e)}")
 
 def clean(data):
     # Remove special characters from the start and end of the string
