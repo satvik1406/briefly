@@ -1,55 +1,57 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Box, Button, IconButton, Tooltip } from '@mui/material';
+import { AppBar, Toolbar, Typography, Box, IconButton, Tooltip } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { Menu as MenuIcon, AccountCircle, Logout} from '@mui/icons-material';
+import { Logout } from '@mui/icons-material';
 import { useAuth } from './App';
 
-// Styled AppBar for customization
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor: theme.palette.primary.main,
+  backgroundColor: '#1876D2', // Updated color
   boxShadow: theme.shadows[2],
 }));
 
 const Navbar = () => {
-    const { logout } = useAuth();
-    return (
-        <StyledAppBar position="static">
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-            {/* Left Section: Logo */}
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {/* <IconButton edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }}>
-                <MenuIcon />
-            </IconButton> */}
-            <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-                Briefly
-            </Typography>
-            </Box>
+  const { logout } = useAuth();
 
-            {/* Center Section: Navigation Links */}
-            {/* <Box sx={{ display: 'flex', gap: 3 }}>
-            <Button color="inherit">Home</Button>
-            <Button color="inherit">About</Button>
-            <Button color="inherit">Contact</Button>
-            </Box> */}
+  const handleRefresh = () => {
+    window.location.href = '/dashboard'; // Force a full page reload
+  };
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Tooltip title="Logout" arrow placement="bottom" sx={{ borderColor: 'white' }}>
-                <IconButton 
-                    onClick={logout}
-                    sx={{ 
-                    color: 'white',
-                    '&:hover': {
-                        color: 'black',
-                    }
-                    }}
-                >
-                    <Logout />
+  return (
+    <StyledAppBar position="static">
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              '&:hover': { color: 'lightgray' },
+            }}
+            onClick={handleRefresh} // Refresh page on click
+          >
+            Briefly
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Tooltip title="Logout" arrow placement="bottom">
+            <IconButton
+              onClick={logout}
+              sx={{
+                color: 'white',
+                '&:hover': {
+                  color: 'lightgray'
+                },
+              }}
+            >
+              <Logout />
             </IconButton>
-            </Tooltip>
-            </Box>
-        </Toolbar>
-        </StyledAppBar>
-    );
+          </Tooltip>
+        </Box>
+      </Toolbar>
+    </StyledAppBar>
+  );
 };
 
 export default Navbar;

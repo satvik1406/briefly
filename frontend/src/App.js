@@ -4,6 +4,7 @@ import { createUser, verifyUser, getUserSummaries } from './RequestService';
 import AuthForms from './AuthForms';
 import Dashboard from './Dashboard';
 import { jwtDecode } from 'jwt-decode';
+import { CircularProgress, Box } from '@mui/material';
 
 // Create Auth Context
 const AuthContext = createContext(null);
@@ -155,7 +156,20 @@ const ProtectedRoute = ({ children }) => {
   }, [isAuthenticated, loading, navigate]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh', // Full screen height
+          width: '100vw', // Full screen width
+          bgcolor: 'background.default', // Optional: Matches the app's background color
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return isAuthenticated ? children : null;

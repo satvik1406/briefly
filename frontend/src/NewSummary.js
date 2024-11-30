@@ -95,7 +95,18 @@ const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
   }, [summaryType]);
 
   const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
+    const uploadedFile = event.target.files[0];
+  
+    if (uploadedFile) {
+      const maxSizeInBytes = 200 * 1024 * 1024;
+  
+      if (uploadedFile.size > maxSizeInBytes) {
+        alert('File size exceeds 200MB. Please upload a smaller file.');
+        return;
+      }
+  
+      setFile(uploadedFile);
+    }
   };
 
   const handleReset = () => {

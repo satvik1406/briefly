@@ -48,6 +48,7 @@ const SummariesList = ({onNewSummaryClick}) => {
       summary.outputData.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
+
   const [sharingSummary, setSharingSummary] = useState(null); // State for sharing summary
   const [recipient, setRecipient] = useState(''); // Recipient email/username
   const [sharing, setSharing] = useState(false); // Sharing state
@@ -173,7 +174,7 @@ const SummariesList = ({onNewSummaryClick}) => {
   const filteredSharedSummaries = sharedSummaries.filter((summary) => {
     return (
       summary.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      summary.content.toLowerCase().includes(searchQuery.toLowerCase())
+      summary.outputData.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
 
@@ -211,7 +212,7 @@ const SummariesList = ({onNewSummaryClick}) => {
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h4" sx={{ mb: 2 }}>
-        {currentView === 'my-summaries' ? 'Your Summaries' : 'Shared Summaries'}
+        {currentView === 'my-summaries' ? 'My Summaries' : 'Shared Summaries'}
       </Typography>
 
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
