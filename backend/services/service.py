@@ -174,6 +174,7 @@ def extract_text_from_pdf(uploaded_file: UploadFile):
         page = pdf_reader.pages[page_num]
         text += page.extract_text()
     return text
+
 def service_share_summary(summary_id: str, recipient: str):
     """
     Shares a summary with another user.
@@ -247,83 +248,11 @@ def service_get_shared_summaries(user_id: str):
     except Exception as e:
         raise NotFoundError(f"Failed to fetch shared summaries: {str(e)}")
 
-def clean(data):
-    # Remove special characters from the start and end of the string
-    return re.sub(r'^[^\w]+|[^\w]+$', '', data)
-
-async def service_process_file(file: UploadFile, summary: Summary):
-    file_contents = await file.read()
-
-    metadata = {
-        "filename": file.filename,
-        "content_type": file.content_type,
-    }
-
-    file_id = grid_fs.put(
-        file_contents,
-        filename=metadata["filename"],
-        content_type=metadata["content_type"]
-    )
-
-    metadata["file_id"] = str(file_id)
-    summary.filedata = metadata
-
-    initialData = extract_text_from_pdf(file)
-
-    summary_data = dict(summary)
-    outputData = call_to_AI(summary_data['type'], initialData)
-    title = clean(outputData.split("Title:")[1].split("Summary:")[0])
-    Summary = clean(outputData.split("Summary:")[1])
-    summary_data['outputData'] = Summary
-    summary_data['title'] = title
-
-    summary_data['_id'] = str(uuid.uuid4())
-    summaries_collection_name.insert_one(summary_data)
-
-    return {"message": "Summary created successfully", "summary_id": summary_data['_id'], "file_id": str(file_id)}
-
-def service_delete_summary(summary_id: str):
-    summary = summaries_collection_name.find_one({"_id": summary_id})
-    if not summary:
-        raise ValueError("Summary not found")
-
-    if "filedata" in summary and summary["filedata"]:
-        file_id = summary["filedata"].get("file_id") 
-        if file_id:
-            grid_fs.delete(file_id)
-
-    summaries_collection_name.delete_one({"_id": summary_id})
-
-    return {"message": "Summary deleted successfully"}
-
-def service_regenrate_summary(summary_id: str, feedback: str):
-    summary = summaries_collection_name.find_one({"_id": summary_id})
-    if not summary:
-        raise NotFoundError("Summary not found")
-    summary_data = dict(summary)
-    outputData = regenerate_feedback(summary_data, feedback)
-    title = clean(outputData.split("Title:")[1].split("Summary:")[0])
-    Summary = clean(outputData.split("Summary:")[1])
-    summary_data['outputData'] = Summary
-    summary_data['Title'] = title
-    summaries_collection_name.update_one({"_id": summary_id}, {"$set": summary_data})
-    return {"message": "Summary regenerated successfully"}
-
-def extract_text_from_pdf(uploaded_file: UploadFile):
-    text = ""
-    pdf_reader = PdfReader(uploaded_file.file)
-    for page_num in range(len(pdf_reader.pages)):
-        page = pdf_reader.pages[page_num]
-        text += page.extract_text()
-    return text
-
 def service_get_summary(summary_id: str):
     summary = summaries_collection_name.find_one({"_id": summary_id})
     if not summary:
         raise ValueError("Summary not found")
-
     summary = summary_serialiser(summary)
-
     return summary
 
 def service_download_file(file_id: str):
