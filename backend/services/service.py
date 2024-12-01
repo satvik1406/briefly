@@ -2,8 +2,6 @@ import uuid
 from models.models import User, Summary
 from config.database import users_collection_name, summaries_collection_name, grid_fs, shared_summaries_collection_name
 from schema.schema import *
-from services.call_to_AI import call_to_AI, regenerate_feedback
-from services.call_to_AI import call_to_AI, regenerate_feedback
 from exceptions import ServiceError, NotFoundError, ValidationError
 from gridfs import GridFS
 from PyPDF2 import PdfReader
@@ -14,11 +12,20 @@ import jwt
 from fastapi import HTTPException, UploadFile
 import re
 from fastapi import UploadFile
-import re
 from fastapi.responses import StreamingResponse
 from bson import ObjectId
+from mistralai import Mistral
+from config.database import grid_fs
+from bson import ObjectId
+from io import BytesIO
 
 SECRET_KEY = "your_secret_key"
+api_key = "UvZmnaaEx8y6tAYTjunw9dNDyXGe11qD"
+prompts = {
+    'code': "You are a code summarisation tool. Understand the given code and output the summary of the code. It should include all details including the input, output and logic of the code.",
+    'research': "You are a research article summarisation tool. Go through the research article or excerpt given to you and summarize it. Make sure to include all the important findings in the article. Be as technical as you can be.",
+    'documentation': "You are a summarisation tool. You will be given a piece of text that you should summarize."
+}
 
 def create_access_token(data: dict, expires_delta: datetime.timedelta):
     to_encode = data.copy()
@@ -160,8 +167,6 @@ def service_regenrate_summary(summary_id: str, feedback: str):
     summaries_collection_name.update_one({"_id": summary_id}, {"$set": summary_data})
     return {"message": "Summary regenerated successfully"}
 
-# service_regenrate_summary("116cc127-17eb-4801-9c2d-ac6a044b05fa", "Write a shorter summary")
-
 def extract_text_from_pdf(uploaded_file: UploadFile):
     text = ""
     pdf_reader = PdfReader(uploaded_file.file)
@@ -295,7 +300,6 @@ def service_regenrate_summary(summary_id: str, feedback: str):
     summary = summaries_collection_name.find_one({"_id": summary_id})
     if not summary:
         raise NotFoundError("Summary not found")
-
     summary_data = dict(summary)
     outputData = regenerate_feedback(summary_data, feedback)
     title = clean(outputData.split("Title:")[1].split("Summary:")[0])
@@ -304,8 +308,6 @@ def service_regenrate_summary(summary_id: str, feedback: str):
     summary_data['Title'] = title
     summaries_collection_name.update_one({"_id": summary_id}, {"$set": summary_data})
     return {"message": "Summary regenerated successfully"}
-
-# service_regenrate_summary("116cc127-17eb-4801-9c2d-ac6a044b05fa", "Write a shorter summary")
 
 def extract_text_from_pdf(uploaded_file: UploadFile):
     text = ""
@@ -341,3 +343,92 @@ def service_download_file(file_id: str):
         media_type=grid_out.content_type,
             headers={"Content-Disposition": f"attachment; filename={grid_out.filename}"}
     )
+
+def call_to_AI(inputType, inputData):
+    model = "open-mistral-nemo"
+    if inputType == "code":
+        model = "open-codestral-mamba"
+    client = Mistral(api_key=api_key)
+    chat_response = client.chat.complete(
+        model = model,
+        messages = [
+            {
+                "role": "system",
+                "content": prompts[inputType],
+            },
+            {
+                "role": "system",
+                "content": '''You should also give a title to the summary. Your output should strictly be of the below format.
+                
+                **Title:** (Title here)
+                
+                **Summary:** (Summary here)
+                ''',
+            },
+            {
+                "role": "user",
+                "content": inputData,
+            }
+        ]
+    )
+    outputData = chat_response.choices[0].message.content 
+    return outputData
+
+def regenerate_feedback(summary_data, feedback):
+    inputType = summary_data['type']
+    model = "open-mistral-nemo"
+    if  inputType == "code":
+        model = "open-codestral-mamba"
+
+    initialData = summary_data['initialData']
+    if initialData is None and summary_data['filedata'] is not None:
+        filedata = summary_data['filedata']
+        file = grid_fs.get(ObjectId(filedata['file_id']))
+        file_contents = file.read()
+        
+        # Create a temporary UploadFile-like object with a file-like interface
+        class TempUploadFile:
+            def __init__(self, filename, contents):
+                self.filename = filename
+                self.file = BytesIO(contents)
+                
+        temp_file = TempUploadFile(filedata['filename'], file_contents)
+        initialData = extract_text_from_file(temp_file, file_contents)
+
+    client = Mistral(api_key=api_key)
+    chat_response = client.chat.complete(
+        model = model,
+        messages = [
+            {
+                "role": "system",
+                "content": "",
+            },
+            {
+                "role": "system",
+                "content": '''You should also give a title to the summary. Your output should strictly be of the below format.
+                
+                **Title:** (Title here)
+                
+                **Summary:** (Summary here)
+                ''',
+            },
+            {
+                "role": "user",
+                "content": initialData,
+            },
+            {
+                "role": "assistant",
+                "content": summary_data['outputData'],
+            },
+            {
+                "role": "user",
+                "content": feedback
+            },
+            {
+                "role": "system",
+                "content": "Regenerate the summary based on the feedback provided by the user. Make sure you strictly follow the same format for the output."
+            }
+        ]
+    )
+    outputData = chat_response.choices[0].message.content 
+    return outputData
