@@ -46,16 +46,20 @@ def shared_summary_serialiser(record: dict, summary: dict, sender: dict) -> dict
     """
 
     shared_at = record.get("shared_at", datetime.datetime.now())
-    
-    return {
+    serialized_data = {
         "id": str(summary["_id"]),
         "title": summary.get("title", "Untitled Summary"),
         "type": summary.get("type", "Unknown Type"),
         "outputData": summary.get("outputData", "No content available"),
         "initialData": summary.get("initialData", "No initial data available"),
         "sharedBy": sender.get("email", "Unknown"),
+        "uploadType": str(summary["uploadType"]),
         "sharedAt": datetime.datetime.strftime(
             shared_at, "%B %d, %Y"
         ) if isinstance(shared_at, datetime.datetime) else "Invalid Date",
         "createdAt": summary.get("createdAt", "Unknown Date")
     }
+    if "filedata" in summary and summary["filedata"]:
+        serialized_data["fileName"] = summary["filedata"].get("filename", None)
+        serialized_data["fileId"] = summary["filedata"].get("file_id", None)
+    return serialized_data

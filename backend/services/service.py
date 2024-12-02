@@ -36,6 +36,7 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta):
     return encoded_jwt
 
 def service_create_new_user(user: User):
+    print(user)
     existing_user = users_collection_name.find_one({'email': user.email, 'phone': user.phone})
     if existing_user:
         raise ServiceError("User Already Exists", status_code=409)
@@ -74,13 +75,7 @@ def service_create_summary(summary: Summary):
     title = clean(outputData.split("Title:")[1].split("Summary:")[0])
     Summary = clean(outputData.split("Summary:")[1])
     summary_data['outputData'] = Summary
-    summary_data['title'] = title
-    
-    outputData = call_to_AI(summary_data['type'],summary_data['initialData'])
-    title = clean(outputData.split("Title:")[1].split("Summary:")[0])
-    Summary = clean(outputData.split("Summary:")[1])
-    summary_data['outputData'] = Summary
-    summary_data['title'] = title
+    summary_data['title'] = title   
     
     summary_data['_id'] = str(uuid.uuid4())
     summaries_collection_name.insert_one(summary_data)
