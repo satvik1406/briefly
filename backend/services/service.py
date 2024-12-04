@@ -193,6 +193,10 @@ def service_share_summary(summary_id: str, recipient: str):
         if not recipient_user:
             raise NotFoundError("The recipient must be a registered user of Briefly.")
 
+        # Check if the sender and recipient are the same
+        if summary["userId"] == recipient_user["_id"]:
+            raise ServiceError("You cannot share a summary with yourself.")
+
         # Create a record in the shared summaries (if necessary)
         shared_record = {
             "_id": str(uuid.uuid4()),
