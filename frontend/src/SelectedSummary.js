@@ -98,7 +98,9 @@ const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
             <Typography variant="h6" sx={{ mt: 2 }}>
                 Output Data:
             </Typography>
-            <MarkdownRenderer content={summary.outputData || 'No content available.'} />
+            <Box sx={{ textAlign: 'justify', mt: 2 }}>
+                <MarkdownRenderer content={summary.outputData || 'No content available.'} />
+            </Box>
 
         {/* Feedback Text Field */}
         {isRegenerating && (

@@ -14,12 +14,17 @@ import {
   Dialog,
   DialogTitle,
   DialogActions,
-  DialogContent
+  DialogContent,
+  Chip
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from './App';
 import { getUserSummaries, deleteUserSummary,shareSummary,getUserSharedSummaries, getUserSummary} from './RequestService'; // Import the delete function
-import {Search, Add} from '@mui/icons-material';
+import {
+  Search, 
+  Add,
+  EventNote as EventNoteIcon
+} from '@mui/icons-material';
 import SummaryToggle from './SummaryToggle';
 import SelectedSummary from './SelectedSummary';
 
@@ -54,6 +59,8 @@ const SummariesList = ({onNewSummaryClick}) => {
   const [sharing, setSharing] = useState(false); // Sharing state
   const [errorMessage, setErrorMessage] = useState(""); 
   const [sharedSummaries, setSharedSummaries] = useState([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [summaryToDelete, setSummaryToDelete] = useState(null);
 
 
   const fetchSummaries = async () => {
@@ -173,12 +180,30 @@ const SummariesList = ({onNewSummaryClick}) => {
     setErrorMessage(''); // Reset error message state
   };
 
+  const confirmDeleteSummary = (summaryId) => {
+    setSummaryToDelete(summaryId); // Track the summary to delete
+    setDeleteDialogOpen(true); // Open the dialog
+  };
+
   const filteredSharedSummaries = sharedSummaries.filter((summary) => {
     return (
       summary.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       summary.outputData.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
+
+  const getCategoryStyles = (type) => {
+    switch (type.toLowerCase()) {
+      case 'code':
+        return { backgroundColor: '#E3F2FD', color: '#1565C0' }; // Light Blue with Dark Blue Text
+      case 'research':
+        return { backgroundColor: '#F3E5F5', color: '#6A1B9A' }; // Light Purple with Dark Purple Text
+      case 'documentation':
+        return { backgroundColor: '#E8F5E9', color: '#2E7D32' }; // Light Green with Dark Green Text
+      default:
+        return { backgroundColor: '#E0E0E0', color: '#616161' }; // Light Grey with Dark Grey Text
+    }
+  };
 
   if (loading) {
     return (
@@ -264,7 +289,13 @@ const SummariesList = ({onNewSummaryClick}) => {
       <Grid container spacing={4}>
         {(currentView === 'my-summaries' ? filteredSummaries : filteredSharedSummaries).map((summary) => (
           <Grid item xs={12} sm={6} md={4} key={summary.id}>
-            <StyledCard>
+            <StyledCard
+              onClick={() => handleViewSummary(summary)} // Add onClick handler here
+              sx={{
+                cursor: 'pointer', // Indicate the card is clickable
+                '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.1)' }, // Optional hover effect
+              }}
+            >
               <CardContent>
                 <Typography 
                   variant="h6" 
@@ -278,15 +309,38 @@ const SummariesList = ({onNewSummaryClick}) => {
                 >
                   {summary.title || 'Untitled Summary'}
                 </Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                  {summary.type || 'General'} - {new Date(summary.sharedAt || summary.createdAt).toLocaleDateString()}
-                </Typography>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Chip
+                    label={summary.type || 'Unknown'}
+                    size="small"
+                    sx={{
+                      fontWeight: 'bold',
+                      textTransform: 'capitalize',
+                      ...getCategoryStyles(summary.type), // Dynamic category styles
+                    }}
+                  />
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: 'text.secondary', 
+                      fontStyle: 'italic', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 0.5 
+                    }}
+                  >
+                    <EventNoteIcon fontSize="small" sx={{ color: 'grey.600' }} />
+                    {new Date(summary.sharedAt || summary.createdAt).toLocaleDateString()}
+                  </Typography>
+                </Box>
+
                 {currentView === 'shared-summaries' && (
                   <Typography variant="body2" color="primary" sx={{ mb: 1 }}>
                     Shared by: {summary.sharedBy}
                   </Typography>
                 )}
-                <Typography variant="body1" sx={{ height: '60px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <Typography variant="body1" sx={{ height: '60px', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'justify' }}>
                   {summary.content || summary.outputData || 'No content available for this summary.'}
                 </Typography>
               </CardContent>
@@ -299,12 +353,32 @@ const SummariesList = ({onNewSummaryClick}) => {
                     <Button
                       size="small"
                       color="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering the card's onClick
+                        confirmDeleteSummary(summary.id); // Open confirmation dialog
+                      }}
+                      disabled={deleting}
+                    >
+                      Delete
+                    </Button>
+
+                    {/* <Button
+                      size="small"
+                      color="secondary"
                       onClick={() => handleDeleteSummary(summary.id)}
                       disabled={deleting}
                     >
                       {deleting ? 'Deleting...' : 'Delete'}
-                    </Button>
-                    <Button size="small" color="primary" onClick={() => handleShareSummary(summary)}>
+                    </Button> */}
+                    <Button 
+                      size="small" 
+                      color="primary" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShareSummary(summary);
+                        }
+                      }
+                    >
                       Share
                     </Button>
                   </>
@@ -314,6 +388,34 @@ const SummariesList = ({onNewSummaryClick}) => {
           </Grid>
         ))}
       </Grid>
+
+      {/* Confirmation Dialog for Deletion */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)} // Close dialog on cancel
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>Do you really want to delete this summary?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)} // Close dialog
+            color="secondary"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              setDeleteDialogOpen(false); // Close dialog
+              handleDeleteSummary(summaryToDelete); // Call delete function
+            }}
+            color="primary"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Dialog for Viewing Summary */}
       {selectedSummary && (

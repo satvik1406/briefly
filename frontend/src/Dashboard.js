@@ -11,38 +11,34 @@ const Dashboard = () => {
   const [summaries, setSummaries] = useState([]);
   const [openNewDialog, setOpenNewDialog] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const fetchSummaries = async () => {
+      setLoading(true); // Reset loading state
       try {
         const response = await getUserSummaries(userData.id);
         if (response.status !== "OK") {
           throw new Error('Failed to fetch summaries');
         }
-        const data = response.result;
-        setSummaries(data);
+        setSummaries(response.result);
       } catch (error) {
         console.error('Error fetching summaries:', error);
       } finally {
-        setLoading(false);
+        setLoading(false); // Ensure loading resets
       }
     };
-
+  
     if (userData) {
       fetchSummaries();
     }
-  }, [userData]);
+  }, [userData, refreshKey]);
 
   const handleNewSummary = async (newSummary) => {
     try {
       setOpenNewDialog(false);
-      const response = await getUserSummaries(newSummary.userId);
-      if (response.status !== "OK") {
-        throw new Error('Failed to fetch summaries');
-      }
-      const data = response.result;
-      setSummaries(data);
-
+      debugger;
+      setRefreshKey((prevKey) => prevKey + 1);
     } catch (error) {
       console.error('Error creating summary:', error);
       // Handle error appropriately

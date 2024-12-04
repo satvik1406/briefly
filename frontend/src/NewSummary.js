@@ -10,6 +10,8 @@ import {
   Typography,
   Button,
   TextField,
+  CircularProgress,
+  Box
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { Description, Code, Article, UploadFile } from '@mui/icons-material';
@@ -81,12 +83,13 @@ const StyledUploadIcon = styled(UploadFile)(({ theme }) => ({
 }));
 
 
-const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
+const NewSummaryDialog = ({ open, onClose, onCreate }) => {
   const { userData } = useAuth();
   const [summaryType, setSummaryType] = useState('');
   const [inputMethod, setInputMethod] = useState('');
   const [content, setContent] = useState('');
   const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setInputMethod('');
@@ -131,18 +134,21 @@ const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
       };
 
       try {
+        setLoading(true);
         var createdSummary;
         if(inputMethod === 'upload') {
           createdSummary = await userSummaryUpload(newSummary);
         } else {
           createdSummary = await createUserSummary(newSummary);
         }
-      
         handleReset();
         onClose();
-        onCreateSuccess(createdSummary);
+        if (onCreate) onCreate(createdSummary);
+        return createdSummary;
       } catch (error) {
         console.error('Error creating summary:', error);
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -226,12 +232,41 @@ const NewSummaryDialog = ({ open, onClose, onCreateSuccess }) => {
             }}
           />
         )}
+
+        {loading && (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              bgcolor: 'rgba(255, 255, 255, 0.8)',
+              zIndex: 10,
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleCancel} color="primary">Cancel</Button>
-        <Button onClick={handleTypeSelect} disabled={!summaryType || !inputMethod || (!content && !file)} color="primary">
-          Create
+        <Button
+          onClick={async () => {
+            const createdSummary = await handleTypeSelect();
+            onCreate(createdSummary);
+          }}
+          color="primary"
+          disabled={!summaryType || !inputMethod || (!content && !file)}
+        >
+          {loading ? <CircularProgress size={24} /> : 'Create'}
         </Button>
+        {/* <Button onClick={handleTypeSelect} disabled={!summaryType || !inputMethod || (!content && !file)} color="primary">
+          {loading ? <CircularProgress size={24} /> : 'Create'}
+        </Button> */}
       </DialogActions>
     </Dialog>
   );
