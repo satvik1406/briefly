@@ -169,6 +169,8 @@ const SummariesList = ({onNewSummaryClick}) => {
   const handleCloseDialog = () => {
     setSelectedSummary(null); // Close dialog
     setSharingSummary(null); // Close share dialog
+    setRecipient(''); // Reset recipient state
+    setErrorMessage(''); // Reset error message state
   };
 
   const filteredSharedSummaries = sharedSummaries.filter((summary) => {
