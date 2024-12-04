@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 from models.models import User, Summary
+import datetime
 
 client = TestClient(app)
 
@@ -15,7 +16,27 @@ def create_user():
         password="password123",
         confirmPassword="password123"
     )
-    response = client.post("/user/create", json=user_data.dict())
+    # Convert datetime fields to ISO format for JSON serialization
+    user_data_dict = user_data.dict()
+    user_data_dict['createdAt'] = user_data.createdAt.isoformat()
+    user_data_dict['lastLoggedInAt'] = user_data.lastLoggedInAt.isoformat()
+    
+    response = client.post("/user/create", json=user_data_dict)
+    return response.json()
+
+@pytest.fixture
+def create_summary(create_user):
+    summary_data = Summary(
+        userId=create_user["result"]["userId"],
+        type="code",
+        uploadType="upload",
+        initialData="print('Hello World')"
+    )
+    # Convert datetime fields to ISO format for JSON serialization
+    summary_data_dict = summary_data.dict()
+    summary_data_dict['createdAt'] = summary_data.createdAt.isoformat()
+    
+    response = client.post("/summary/create", json=summary_data_dict)
     return response.json()
 
 def test_create_user(create_user):
@@ -31,16 +52,9 @@ def test_verify_user(create_user):
     assert response.status_code == 200
     assert "auth_token" in response.json()["result"]
 
-def test_create_summary(create_user):
-    summary_data = {
-        "userId": create_user["result"]["userId"],
-        "type": "code",
-        "uploadType": "upload",
-        "initialData": "print('Hello World')"
-    }
-    response = client.post("/summary/create", json=summary_data)
-    assert response.status_code == 201
-    assert "summary_id" in response.json()["result"]
+def test_create_summary(create_summary):
+    assert create_summary["status"] == "OK"
+    assert "summary_id" in create_summary["result"]
 
 def test_user_summaries(create_user):
     user_id = create_user["result"]["userId"]
@@ -48,15 +62,8 @@ def test_user_summaries(create_user):
     assert response.status_code == 200
     assert isinstance(response.json()["result"], list)
 
-def test_delete_summary(create_user):
-    summary_data = {
-        "userId": create_user["result"]["userId"],
-        "type": "code",
-        "uploadType": "upload",
-        "initialData": "print('Hello World')"
-    }
-    create_response = client.post("/summary/create", json=summary_data)
-    summary_id = create_response.json()["result"]["summary_id"]
+def test_delete_summary(create_summary):
+    summary_id = create_summary["result"]["summary_id"]
 
     delete_response = client.delete(f"/summary/{summary_id}")
     assert delete_response.status_code == 201
