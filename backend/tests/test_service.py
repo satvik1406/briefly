@@ -77,10 +77,12 @@ def test_create_summary(create_summary):
     assert "summary_id" in create_summary["result"]
 
 def test_user_summaries(create_user):
-    user_id = create_user["result"].get("userId")
+    print("Test User Summaries Response:", create_user)
+    user_id = create_user["result"]["user"].get("id")
     assert user_id is not None, "User ID should not be None"
     
     response = client.get(f"/summaries/{user_id}")
+    print("Test User Summaries Response:", response.json())
     assert response.status_code == 200
     assert isinstance(response.json()["result"], list)
 
