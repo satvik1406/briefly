@@ -66,7 +66,7 @@ def create_summary(create_user):
     }
     
     response = client.post("/summary/create", json=summary_data_dict, headers=headers)
-    return response.json()
+    return response.json(), auth_token
 
 def test_create_user(create_user):
     print("Create User Response:", create_user)  # Print the response for debugging
@@ -83,22 +83,28 @@ def test_verify_user(create_user):
     assert "auth_token" in response.json()["result"]
 
 def test_create_summary(create_summary):
-    assert create_summary["status"] == "OK"
-    assert "summary_id" in create_summary["result"]
+    assert create_summary[0]["status"] == "OK"
+    assert "summary_id" in create_summary[0]["result"]
 
 def test_user_summaries(create_user):
     print("Test User Summaries Response:", create_user)
     user_id = create_user["result"]["user"].get("id")
     assert user_id is not None, "User ID should not be None"
-    
-    response = client.get(f"/summaries/{user_id}")
+    auth_token = create_user["result"]["auth_token"]
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    response = client.get(f"/summaries/{user_id}",headers=headers)
     print("Test User Summaries Response:", response.json())
     assert response.status_code == 200
     assert isinstance(response.json()["result"], list)
 
 def test_delete_summary(create_summary):
-    summary_id = create_summary["result"]["summary_id"]
-
-    delete_response = client.delete(f"/summary/{summary_id}")
+    summary_id = create_summary[0]["result"]["summary_id"]
+    auth_token = create_summary[1]
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    delete_response = client.delete(f"/summary/{summary_id}", headers=headers)
     assert delete_response.status_code == 201
     assert delete_response.json()["result"]["message"] == "Summary deleted successfully" 
