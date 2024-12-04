@@ -1,7 +1,6 @@
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from gridfs import GridFS
-from gridfs import GridFS
 import certifi
 
 uri = "mongodb+srv://admin:user123@brieflyapplicationclust.g7ifw.mongodb.net/?retryWrites=true&w=majority&appName=BrieflyApplicationCluster"
@@ -11,7 +10,5 @@ db = client.internaldb
 users_collection_name = db["users"]
 summaries_collection_name = db["summaries"]
 shared_summaries_collection_name = db["shared_summaries"]
-
-grid_fs = GridFS(db)
 
 grid_fs = GridFS(db)
