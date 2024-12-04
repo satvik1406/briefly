@@ -42,20 +42,30 @@ def create_user():
 
 @pytest.fixture
 def create_summary(create_user):
-    if 'userId' not in create_user.get("result", {}):
+    if 'user' not in create_user.get("result", {}):
         pytest.fail("User creation failed or userId not found in response.")
+    auth_token = create_user["result"]["auth_token"]
     
     summary_data = Summary(
-        userId=create_user["result"]["userId"],
+        userId=create_user["result"]["user"]["id"],
         type="code",
         uploadType="upload",
         initialData="print('Hello World')"
     )
-    # Convert datetime fields to ISO format for JSON serialization
-    summary_data_dict = summary_data.dict()
-    summary_data_dict['createdAt'] = summary_data.createdAt.isoformat()
     
-    response = client.post("/summary/create", json=summary_data_dict)
+    summary_data_dict = {
+        "userId": summary_data.userId,
+        "type": summary_data.type,
+        "uploadType": summary_data.uploadType,
+        "initialData": summary_data.initialData,
+        "createdAt": summary_data.createdAt.isoformat()  # Convert to ISO format string
+    }
+    
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    
+    response = client.post("/summary/create", json=summary_data_dict, headers=headers)
     return response.json()
 
 def test_create_user(create_user):
