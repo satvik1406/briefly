@@ -9,10 +9,7 @@
     "@mui/material": "^6.1.6",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-slot": "^1.1.0",
-    "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^13.5.0",
-    "axios": "^1.7.7",
+    "axios": "^1.7.9",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "jwt-decode": "^4.0.0",
@@ -24,6 +21,7 @@
     "react-phone-number-input": "^3.4.9",
     "react-router-dom": "^6.27.0",
     "react-scripts": "5.0.1",
+    "react-syntax-highlighter": "^15.6.1",
     "remark-gfm": "^4.0.0",
     "tailwind-merge": "^2.5.4",
     "web-vitals": "^2.1.4"
@@ -53,6 +51,12 @@
     ]
   },
   "devDependencies": {
-    "@shadcn/ui": "^0.0.4"
+    "@babel/plugin-proposal-private-property-in-object": "^7.18.6",
+    "@shadcn/ui": "^0.0.4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/user-event": "^14.5.2",
+    "axios-mock-adapter": "^2.1.0",
+    "jest": "^27.5.1"
   }
 }
