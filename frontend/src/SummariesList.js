@@ -15,7 +15,9 @@ import {
   DialogTitle,
   DialogActions,
   DialogContent,
-  Chip
+  Chip,
+  Tabs,
+  Tab
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from './App';
@@ -46,14 +48,6 @@ const SummariesList = ({onNewSummaryClick}) => {
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [currentView, setCurrentView] = useState('my-summaries');
-  
-  const filteredSummaries = summaries.filter((summary) => {
-    return (
-      summary.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      summary.outputData.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
-
   const [sharingSummary, setSharingSummary] = useState(null); // State for sharing summary
   const [recipient, setRecipient] = useState(''); // Recipient email/username
   const [sharing, setSharing] = useState(false); // Sharing state
@@ -61,7 +55,7 @@ const SummariesList = ({onNewSummaryClick}) => {
   const [sharedSummaries, setSharedSummaries] = useState([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [summaryToDelete, setSummaryToDelete] = useState(null);
-
+  const [activeTab, setActiveTab] = useState('all');
 
   const fetchSummaries = async () => {
     try {
@@ -185,12 +179,23 @@ const SummariesList = ({onNewSummaryClick}) => {
     setDeleteDialogOpen(true); // Open the dialog
   };
 
-  const filteredSharedSummaries = sharedSummaries.filter((summary) => {
-    return (
-      summary.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      summary.outputData.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const filteredSummaries = summaries.filter((summary) => {
+    const matchesTab = activeTab === 'all' || summary.type.toLowerCase() === activeTab;
+    const matchesSearch = summary.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          summary.outputData.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesTab && matchesSearch; // Both conditions must be true
   });
+
+  const filteredSharedSummaries = sharedSummaries.filter((summary) => {
+    const matchesTab = activeTab === 'all' || summary.type.toLowerCase() === activeTab;
+    const matchesSearch = summary.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          summary.outputData.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesTab && matchesSearch; // Both conditions must be true
+  });
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
 
   const getCategoryStyles = (type) => {
     switch (type.toLowerCase()) {
@@ -235,6 +240,10 @@ const SummariesList = ({onNewSummaryClick}) => {
     );
   }
 
+  if (!summaries.length) {
+    return <Alert severity="info">No summaries available. Create one to get started!</Alert>;
+  }
+
   // Render list view
   return (
     <Box sx={{ p: 2 }}>
@@ -276,6 +285,21 @@ const SummariesList = ({onNewSummaryClick}) => {
           New Summary
         </Button>
       </Box>
+
+      <Tabs
+        value={activeTab}
+        onChange={handleTabChange}
+        indicatorColor="primary"
+        textColor="primary"
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{ mb: 3 }}
+      >
+        <Tab label="All" value="all" />
+        <Tab label="Code" value="code" />
+        <Tab label="Research" value="research" />
+        <Tab label="Documentation" value="documentation" />
+      </Tabs>
 
       <SummaryToggle 
         currentView={currentView}
