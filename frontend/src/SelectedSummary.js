@@ -56,6 +56,20 @@ const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
         }
     };
 
+    if (!summary) {
+        return (
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h4" sx={{ mb: 2 }}>
+              No Summary Available
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Please select a summary to view its details.
+            </Typography>
+            <button onClick={onBack}>Back</button>
+          </Box>
+        );
+      }
+
     return (
         <Box sx={{ p: 2 }}>
             <Typography variant="h4" sx={{ mb: 2 }}>
