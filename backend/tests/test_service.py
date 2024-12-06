@@ -1,4 +1,5 @@
 import pytest
+import uuid
 from fastapi.testclient import TestClient
 from main import app
 from models.models import User, Summary
@@ -7,36 +8,83 @@ import os
 from pymongo import MongoClient
 from io import BytesIO
 from reportlab.pdfgen import canvas
+from config.database import db
 # Set the environment variable for the test database
-os.environ['DATABASE_URL'] = 'mongodb://localhost:27017/test_db'  # Adjust as necessary
+os.environ['DATABASE_URL'] = 'mongodb+srv://admin:admin123@cluster0.jkvhz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'  # Adjust as necessary
 
 client = TestClient(app)
 
 mongo_client = MongoClient(os.environ['DATABASE_URL'])
-db = mongo_client.test_db
 
-users_collection_name = db["users"]
-summaries_collection_name = db["summaries"]
-shared_summaries_collection_name = db["shared_summaries"]
 @pytest.fixture(scope="module", autouse=True)
 def setup_database():
- 
-    yield  # This allows the tests to run
+    users_collection = db["users"]
+    summaries_collection = db["summaries"]
+    shared_summaries_collection = db["shared_summaries"]
+
+    # Drop collections to ensure a clean state
+    users_collection.drop()
+    summaries_collection.drop()
+    shared_summaries_collection.drop()
+
+    # Dummy data for users
+    user1 = User(
+        firstName="Alice",
+        lastName="Smith",
+        phone="+14132752733",
+        email="alice.smith@example.com",
+        password="password123"
+    )
+    user2 = User(
+        firstName="Bob",
+        lastName="Johnson",
+        phone="+14132782738",
+        email="bob.johnson@example.com",
+        password="password123"
+    )
+
+    # Insert users into the database
+    users_collection.insert_many([user1.dict(), user2.dict()])  # Convert to dict for insertion
+
+    # Dummy data for summaries
+    summary1 = Summary(
+        userId=user1.email,  # Assuming userId is stored as email for this example
+        type="code",
+        uploadType="upload",
+        initialData="print('Hello from Alice')",
+        outputData= "This is a sample summary"
+    )
+    summary2 = Summary(
+        userId=user2.email,  # Assuming userId is stored as email for this example
+        type="code",
+        uploadType="upload",
+        initialData="print('Hello from Bob')",
+        outputData= "This is a sample summary"
+    )
+
+    # Insert summaries into the database
+    summaries_collection.insert_many([summary1.dict(), summary2.dict()])  # Convert to dict for insertion
+    yield
+    users_collection.drop()
+    summaries_collection.drop()
+    shared_summaries_collection.drop()
+    
 
 @pytest.fixture
 def create_user():
-    user_data = User(
-        firstName="John",
-        lastName="Doe",
-        phone="+14132772734",
-        email="john.doe@example.com",
-        password="password123",
-        confirmPassword="password123"
-    )
+    user = User(
+            firstName="John",
+            lastName="Doe",
+            phone="+14132772734",
+            email="john.doe@example.com",
+            password="password123",
+            confirmPassword="password123"
+        )
+    
     # Convert datetime fields to ISO format for JSON serialization
-    user_data_dict = user_data.dict()
-    user_data_dict['createdAt'] = user_data.createdAt.isoformat()
-    user_data_dict['lastLoggedInAt'] = user_data.lastLoggedInAt.isoformat()
+    user_data_dict = user.dict()
+    user_data_dict['createdAt'] = user.createdAt.isoformat()
+    user_data_dict['lastLoggedInAt'] = user.lastLoggedInAt.isoformat()
     
     # Check if user already exists
     existing_user_response = client.post("/user/verify", json={"email": user_data_dict['email'], "password": user_data_dict['password']})
@@ -74,22 +122,33 @@ def create_summary(create_user):
     
     response = client.post("/summary/create", json=summary_data_dict, headers=headers)
     print("Create summary ",response.json())
-    #response = {'status': 'OK', 'result': {'message': 'Summary created successfully', 'summary_id': '5f38bfe7-3c74-42c2-ac90-340134f44c4f'}}
     return response.json(), auth_token
 
-def test_create_user(create_user):
-    print("Create User Response:", create_user)  # Print the response for debugging
-    assert create_user["status"] == "OK" or create_user.get("detail") == "User Already Exists"
-    assert "userId" in create_user.get("result", {}) or "userId" not in create_user
+def test_create_user():
+    user = User(
+            firstName="Test",
+            lastName="User",
+            phone="+14132072934",
+            email="testnewuser@example.com",
+            password="password123",
+            confirmPassword="password123"
+        )
+    # Convert datetime fields to ISO format for JSON serialization
+    user_data_dict = user.dict()
+    user_data_dict['createdAt'] = user.createdAt.isoformat()
+    user_data_dict['lastLoggedInAt'] = user.lastLoggedInAt.isoformat()
+    response = client.post("/user/create", json=user_data_dict)
+    assert response.json()["status"] == "OK" 
+    db.users.delete_many({'email': user.email})
+
 
 def test_create_user_with_existing_email():
     user_data = User(
-        firstName="Jane",
-        lastName="Doe",
-        phone="+14132752734",
-        email="john.doe@example.com",  # Using existing email
-        password="password123",
-        confirmPassword="password123"
+        firstName="Alice",
+        lastName="Smith",
+        phone="+14132752733",
+        email="alice.smith@example.com",
+        password="password123"
     )
     user_data_dict = user_data.dict()
     user_data_dict['createdAt'] = user_data.createdAt.isoformat()
@@ -99,26 +158,14 @@ def test_create_user_with_existing_email():
     assert response.status_code == 409  # Conflict status code for existing user
     assert response.json().get("detail") == "User Already Exists"
 
-def test_verify_user(create_user):
+def test_verify_user():
     user_data = {
-        "email": "john.doe@example.com",
+        "email": "alice.smith@example.com",
         "password": "password123"
     }
     response = client.post("/user/verify", json=user_data)
     assert response.status_code == 200
     assert "auth_token" in response.json()["result"]
-
-# def test_user_summaries_empty(create_user):
-#     """Test fetching summaries for a user with no summaries."""
-#     user_id = create_user["result"]["user"].get("id")
-#     # Ensure there are no summaries for this user
-#     auth_token = create_user["result"]["auth_token"]
-#     headers = {
-#         "Authorization": f"Bearer {auth_token}"
-#     }
-#     response = client.get(f"/summaries/{user_id}",headers=headers)
-#     assert response.status_code == 200
-#     assert response.json()["result"] == []  # Expecting an empty list
     
 def test_create_summary(create_summary):
     assert create_summary[0]["status"] == "OK"
@@ -278,3 +325,64 @@ def test_get_summary_not_found(create_summary):
     }
     with pytest.raises(ValueError, match="Summary not found"):
         response = client.get("/summary/non_existent_summary_id", headers=headers) 
+
+def test_get_shared_summaries_success(create_summary):
+    """Test successfully retrieving shared summaries for a user."""
+    # Create a second user
+    second_user_data = User(
+        firstName="Jane",
+        lastName="Doe",
+        phone="+14132752735",
+        email="jane.doe@example.com",
+        password="password123",
+        confirmPassword="password123"
+    )
+    second_user_data_dict = second_user_data.dict()
+    second_user_data_dict['createdAt'] = second_user_data.createdAt.isoformat()
+    second_user_data_dict['lastLoggedInAt'] = second_user_data.lastLoggedInAt.isoformat()
+    existing_user_response = client.post("/user/verify", json={"email": second_user_data_dict['email'], "password": second_user_data_dict['password']})
+    
+    if existing_user_response.status_code == 200:
+        second_user_response = existing_user_response
+    else:
+        second_user_response = client.post("/user/create", json=second_user_data_dict)
+    
+    
+    # Share the summary created by the first user with the second user
+    summary_id = create_summary[0]["result"]["summary_id"]
+    auth_token = create_summary[1]
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    client.post("/summary/share", json={"summary_id": summary_id, "recipient": second_user_data.email}, headers=headers)
+
+    # Now retrieve shared summaries for the second user
+    recipient_user_id = second_user_response.json()["result"]["user"]["id"]
+    response = client.get(f"/user/{recipient_user_id}/shared-summaries", headers={"Authorization": f"Bearer {auth_token}"})
+    assert response.status_code == 200
+    assert isinstance(response.json()["result"], list)
+    assert len(response.json()["result"]) > 0  
+
+def test_get_shared_summaries_no_shared(create_user):
+    """Test retrieving shared summaries for a user with no shared summaries."""
+    user_id = create_user["result"]["user"]["id"]
+    auth_token = create_user["result"]["auth_token"]
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    response = client.get(f"/user/{user_id}/shared-summaries", headers=headers)
+    
+    assert response.status_code == 200
+    assert response.json()["result"] == []  # Expecting an empty list
+
+def test_get_shared_summaries_invalid_user(create_user):
+    """Test retrieving shared summaries for a non-existent user."""
+    invalid_user_id = "non_existent_user_id"
+    auth_token = create_user["result"]["auth_token"]
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    response = client.get(f"/user/{invalid_user_id}/shared-summaries", headers=headers)
+
+    assert response.status_code == 200  # Assuming the API returns an empty list for non-existent users
+    assert response.json()["result"] == []  # Expecting an empty list since the user does not exist
