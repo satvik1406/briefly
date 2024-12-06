@@ -385,15 +385,6 @@ const SummariesList = ({onNewSummaryClick}) => {
                     >
                       Delete
                     </Button>
-
-                    {/* <Button
-                      size="small"
-                      color="secondary"
-                      onClick={() => handleDeleteSummary(summary.id)}
-                      disabled={deleting}
-                    >
-                      {deleting ? 'Deleting...' : 'Delete'}
-                    </Button> */}
                     <Button 
                       size="small" 
                       color="primary" 
@@ -463,18 +454,15 @@ const SummariesList = ({onNewSummaryClick}) => {
        {/* Dialog for Sharing Summary */}
        {sharingSummary && (
         <Dialog open={Boolean(sharingSummary)} onClose={handleCloseDialog} fullWidth maxWidth="sm">
-          <DialogTitle>Share Summary</DialogTitle>
+          <DialogTitle>Share Summary: {sharingSummary.title || 'Untitled Summary'} </DialogTitle>
           <DialogContent>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              Sharing: {sharingSummary.title || 'Untitled Summary'}
-            </Typography>
             <TextField
               fullWidth
               label="Recipient Email or Username"
               variant="outlined"
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
-              sx={{ mb: 2 }}
+              sx={{ mt: 2, mb: 2 }}
             />
              {/* Error Message */}
       {errorMessage && (

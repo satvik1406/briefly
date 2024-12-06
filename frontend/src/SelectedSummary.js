@@ -5,18 +5,23 @@ import {
   TextField,
   Button,
   IconButton,
+  Paper,
+  Tooltip
 } from '@mui/material';
-import { Download, InsertDriveFile } from '@mui/icons-material';
+import { Download, InsertDriveFile, Replay as ReplayIcon } from '@mui/icons-material';
 import MarkdownRenderer from './MarkdownRenderer';
 import { regenerateUserSummary, getInputFile } from './RequestService';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'; // Import the copy icon
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
   const [isRegenerating, setIsRegenerating] = useState(false); // Track regenerate state
   const [feedback, setFeedback] = useState(''); // Store feedback from the user
   const [regenerating, setRegenerating] = useState(false); // Loading state for regeneration
+  const [isCopied, setIsCopied] = useState(false);
 
-  const handleRegenerateClick = () => {
-    setIsRegenerating(true); // Show feedback box
+  const handleRegenerateClick = (e) => {
+    setIsRegenerating((prevState) => !prevState); // Show feedback box
   };
 
   const handleSubmitRegenerate = async () => {
@@ -27,7 +32,7 @@ const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
             feedback: feedback,
         };
 
-        const regeneratedSummary = await regenerateUserSummary(regenerateSummary);
+        await regenerateUserSummary(regenerateSummary);
         onSummaryRegenerate(summary);
         setFeedback('');
         setIsRegenerating(false);
@@ -37,6 +42,14 @@ const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
         setRegenerating(false);
     }
   };
+
+    const handleCopyOutput = () => {
+        if (summary.outputData) {
+            navigator.clipboard.writeText(summary.outputData); // Copy the text to clipboard
+            setIsCopied(true); // Show feedback
+            setTimeout(() => setIsCopied(false), 2000); // Reset feedback after 2 seconds
+        }
+    };
 
     const handleFileDownload = async () => {
         try {
@@ -72,91 +85,156 @@ const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
 
     return (
         <Box sx={{ p: 2 }}>
-            <Typography variant="h4" sx={{ mb: 2 }}>
-                {summary.title || 'Untitled Summary'}
-            </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                Type: {summary.type || 'General'}
-            </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                Created At: {new Date(summary.createdAt).toLocaleString()}
-            </Typography>
-            <Typography variant="h6" sx={{ mt: 2 }}>
-                Input Data:
-            </Typography>
-            {summary.uploadType === 'upload' ? (
-                <Box
+            <IconButton
+                onClick={onBack}
                 sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    bgcolor: 'grey.100',
-                    p: 2,
-                    borderRadius: 1,
-                    cursor: 'pointer',
+                    color: 'primary.main',
+                    '&:hover': {
+                    backgroundColor: 'primary.light',
+                    },
+                    marginRight: 2,
+                    mb: 2,
+                    ml: -1
                 }}
-                onClick={handleFileDownload}
                 >
-                <InsertDriveFile sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                <Typography variant="body1">
-                    {summary.fileName || 'Uploaded File'}
-                </Typography>
-                <IconButton>
-                    <Download sx={{ color: 'primary.main' }} />
+                    <ArrowBackIcon sx={{ fontSize: 28 }} />
                 </IconButton>
-                </Box>
-            ) : (
-                <Typography variant="body1" sx={{ mt: 1, whiteSpace: 'pre-wrap', bgcolor: 'grey.100', p: 2 }}>
-                {summary.initialData || 'No initial data available.'}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Typography variant="h4" sx={{ wordWrap: 'break-word', flexGrow: 1 }}>
+                    {summary.title || 'Untitled Summary'}
                 </Typography>
-            )}
-            <Typography variant="h6" sx={{ mt: 2 }}>
-                Output Data:
-            </Typography>
-            <Box sx={{ textAlign: 'justify', mt: 2 }}>
-                <MarkdownRenderer content={summary.outputData || 'No content available.'} />
             </Box>
-
-        {/* Feedback Text Field */}
-        {isRegenerating && (
-            <Box sx={{ mt: 3, mb: 2 }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-                Feedback for Regeneration:
-            </Typography>
-            <TextField
-                multiline
-                rows={4}
-                placeholder="Provide feedback for regenerating this summary..."
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                fullWidth
-                variant="outlined"
-                sx={{ mb: 2 }}
-            />
+      
+          {/* Input Data Section */}
+          <Typography variant="h6" sx={{ mt: 2, mb:2 }}>
+            Input Data
+          </Typography>
+          <Paper
+            elevation={0}
+            sx={{
+                mt: 1,
+                p: 2,
+                backgroundColor: 'grey.100',
+                borderRadius: 1,
+                display: 'flex',
+                alignItems: 'center',
+            }}
+            >
+            <InsertDriveFile sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+            <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '16px'}}>
+                {summary.fileName || 'Uploaded File'}
+                </Typography>
             </Box>
-        )}
+            <IconButton>
+                <Download 
+                    sx={{ color: 'primary.main' }} 
+                    onClick = {handleFileDownload}    
+                />
+            </IconButton>
+            </Paper>
+      
+          {/* Output Data Section */}
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Output Data
+          </Typography>
+          <Paper
+            elevation={0}
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                mt: 2,
+                p: 2,
+                backgroundColor: 'grey.100',
+                borderRadius: 1,
+                position: 'relative',
+            }}
+            >
+                {/* Output Content */}
+                <Box sx={{ 
+                    flex: 1, 
+                    textAlign: 'justify',
+                    maxHeight: '400px', // Restrict the height
+                    overflow: 'auto',
+                }}>
+                    <MarkdownRenderer content={summary.outputData || 'No content available.'} />
+                </Box>
 
-        {/* Action Buttons */}
-        <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-            <Button variant="contained" color="primary" onClick={onBack}>
-            Back
-            </Button>
-            {!isRegenerating ? (
-            <Button variant="outlined" color="secondary" onClick={handleRegenerateClick}>
-                Regenerate
-            </Button>
-            ) : (
-            <Button
+                <Box
+                    sx={{
+                    display: 'flex',
+                    flexDirection: 'column', // Stack buttons vertically
+                    alignItems: 'center',
+                    ml: 2, // Add spacing from content
+                    }}
+                >
+                    {/* Retry Button */}
+                    <Tooltip title="Regenerate" arrow>
+                    <IconButton
+                        sx={{
+                        color: 'secondary.main',
+                        mb: 1, // Add margin between buttons
+                        }}
+                        onClick={handleRegenerateClick}
+                    >
+                        <ReplayIcon /> {/* Material-UI's Retry Icon */}
+                    </IconButton>
+                    </Tooltip>
+
+                    {/* Copy Button */}
+                    <Tooltip title={isCopied ? 'Copied!' : 'Copy to Clipboard'} arrow>
+                    <IconButton
+                        sx={{
+                        color: 'primary.main',
+                        }}
+                        onClick={handleCopyOutput}
+                    >
+                        <ContentCopyIcon />
+                    </IconButton>
+                    </Tooltip>
+                </Box>
+            </Paper>
+      
+          {/* Feedback and Action Buttons */}
+          {isRegenerating && (
+            <Paper
+                elevation={0}
+                sx={{
+                mt: 3,
+                p: 2,
+                backgroundColor: 'grey.100',
+                borderRadius: 1,
+                }}
+            >
+                <Typography variant="h6" sx={{ mb: 1 }}>
+                    Feedback for Regeneration:
+                </Typography>
+                <TextField
+                    multiline
+                    rows={4}
+                    placeholder="Provide feedback for regenerating this summary..."
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    fullWidth
+                    variant="outlined"
+                />
+            </Paper>
+          )}
+          <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+            {isRegenerating && 
+              <Button
                 variant="contained"
                 color="primary"
                 onClick={handleSubmitRegenerate}
                 disabled={regenerating || !feedback.trim()}
-            >
+              >
                 {regenerating ? 'Submitting...' : 'Submit'}
-            </Button>
-            )}
+              </Button>
+            }
+          </Box>
         </Box>
-        </Box>
-    );
+      );     
     };
 
     export default SelectedSummary;

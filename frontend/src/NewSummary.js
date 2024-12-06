@@ -264,9 +264,6 @@ const NewSummaryDialog = ({ open, onClose, onCreate }) => {
         >
           {loading ? <CircularProgress size={24} /> : 'Create'}
         </Button>
-        {/* <Button onClick={handleTypeSelect} disabled={!summaryType || !inputMethod || (!content && !file)} color="primary">
-          {loading ? <CircularProgress size={24} /> : 'Create'}
-        </Button> */}
       </DialogActions>
     </Dialog>
   );
