@@ -29,18 +29,22 @@ def setup_database():
 
     # Dummy data for users
     user1 = User(
+        _id=str(uuid.uuid4()),
         firstName="Alice",
         lastName="Smith",
         phone="+14132752733",
         email="alice.smith@example.com",
-        password="password123"
+        password="password123",
+        confirmPassword="password123"
     )
     user2 = User(
+        _id = str(uuid.uuid4()),
         firstName="Bob",
         lastName="Johnson",
         phone="+14132782738",
         email="bob.johnson@example.com",
-        password="password123"
+        password="password123",
+        confirmPassword="password123"
     )
 
     # Insert users into the database
@@ -48,18 +52,19 @@ def setup_database():
 
     # Dummy data for summaries
     summary1 = Summary(
-        userId=user1.email,  # Assuming userId is stored as email for this example
+        userId=str(uuid.uuid4()),  # Assuming userId is stored as email for this example
         type="code",
         uploadType="upload",
         initialData="print('Hello from Alice')",
         outputData= "This is a sample summary"
     )
     summary2 = Summary(
-        userId=user2.email,  # Assuming userId is stored as email for this example
+        userId=str(uuid.uuid4()),  # Assuming userId is stored as email for this example
         type="code",
         uploadType="upload",
+        title="Title",
         initialData="print('Hello from Bob')",
-        outputData= "This is a sample summary"
+        outputData= "This is a sample summary",
     )
 
     # Insert summaries into the database
@@ -164,6 +169,7 @@ def test_verify_user():
         "password": "password123"
     }
     response = client.post("/user/verify", json=user_data)
+    print(response)
     assert response.status_code == 200
     assert "auth_token" in response.json()["result"]
     
