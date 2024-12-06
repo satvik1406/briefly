@@ -5,8 +5,7 @@ from schema.schema import *
 from exceptions import ServiceError, NotFoundError, ValidationError
 from gridfs import GridFS
 from PyPDF2 import PdfReader
-from gridfs import GridFS
-from PyPDF2 import PdfReader
+import json
 import datetime
 import jwt
 from fastapi import HTTPException, UploadFile
@@ -22,9 +21,9 @@ from io import BytesIO
 SECRET_KEY = "your_secret_key"
 api_key = "UvZmnaaEx8y6tAYTjunw9dNDyXGe11qD"
 prompts = {
-    'code': "You are a code summarisation tool. Understand the given code and output the summary of the code. It should include all details including the input, output and logic of the code.",
-    'research': "You are a research article summarisation tool. Go through the research article or excerpt given to you and summarize it. Make sure to include all the important findings in the article. Be as technical as you can be.",
-    'documentation': "You are a summarisation tool. You will be given a piece of text that you should summarize."
+    'code': "You are a code summarisation tool. Understand the given code and output the detailed summary of the code.",
+    'research': "You are a research article summarisation tool. Go through the research article given to you and give a detailed summary. Make sure your summary covers motivation, methodology, results and future improvements.",
+    'documentation': "You are a summarisation tool. You will be given a piece of text that you should summarize, make sure to cover as much content as you can. Be as technical as you can be."
 }
 
 def create_access_token(data: dict, expires_delta: datetime.timedelta):
@@ -70,18 +69,12 @@ def service_user_summaries(userId: str) -> list:
 def service_create_summary(summary: Summary):
     summary_data = dict(summary)
     outputData = call_to_AI(summary_data['type'],summary_data['initialData'])
-    title = clean(outputData.split("Title:")[1].split("Summary:")[0])
-    Summary = clean(outputData.split("Summary:")[1])
-    summary_data['outputData'] = Summary
-    summary_data['title'] = title   
+    summary_data['outputData'] = outputData['Summary']
+    summary_data['title'] = outputData['Title']   
     
     summary_data['_id'] = str(uuid.uuid4())
     summaries_collection_name.insert_one(summary_data)
     return {"message": "Summary created successfully", "summary_id": summary_data['_id']}
-
-def clean(data):
-    # Remove special characters from the start and end of the string
-    return re.sub(r'^[^\w]+|[^\w]+$', '', data)
 
 def extract_text_from_file(file: UploadFile, contents: bytes) -> str:
     """Extract text from various file types."""
@@ -118,14 +111,11 @@ async def service_process_file(file: UploadFile, summary: Summary):
 
     metadata["file_id"] = str(file_id)
     summary.filedata = metadata
-
     initialData = extract_text_from_file(file, file_contents)
     summary_data = dict(summary)
     outputData = call_to_AI(summary_data['type'], initialData)
-    title = clean(outputData.split("Title:")[1].split("Summary:")[0])
-    Summary = clean(outputData.split("Summary:")[1])
-    summary_data['outputData'] = Summary
-    summary_data['title'] = title
+    summary_data['outputData'] = outputData['Summary']
+    summary_data['title'] = outputData['Title']  
 
     summary_data['_id'] = str(uuid.uuid4())
     summaries_collection_name.insert_one(summary_data)
@@ -153,10 +143,8 @@ def service_regenrate_summary(summary_id: str, feedback: str):
 
     summary_data = dict(summary)
     outputData = regenerate_feedback(summary_data, feedback)
-    title = clean(outputData.split("Title:")[1].split("Summary:")[0])
-    Summary = clean(outputData.split("Summary:")[1])
-    summary_data['outputData'] = Summary
-    summary_data['Title'] = title
+    summary_data['outputData'] = outputData['Summary']
+    summary_data['title'] = outputData['Title']
     summaries_collection_name.update_one({"_id": summary_id}, {"$set": summary_data})
     return {"message": "Summary regenerated successfully"}
 
@@ -265,6 +253,10 @@ def service_download_file(file_id: str):
             headers={"Content-Disposition": f"attachment; filename={grid_out.filename}"}
     )
 
+def clean(data):
+    # Remove special characters from the start and end of the string
+    return re.sub(r'^[^\w]+|[^\w]+$', '', data)
+
 def call_to_AI(inputType, inputData):
     model = "open-mistral-nemo"
     if inputType == "code":
@@ -279,20 +271,58 @@ def call_to_AI(inputType, inputData):
             },
             {
                 "role": "system",
-                "content": '''You should also give a title to the summary. Your output should strictly be of the below format.
-                
-                **Title:** (Title here)
-                
-                **Summary:** (Summary here)
+                "content":'''
+                This is an example showing how the format of the output should be, use this only as an example and do not fetch any data from this into your output. 
+
+                <Example_1>
+                Input:
+                "
+                    print('Hello World')
+                "
+                Output:
+                "
+                {
+                    "Title": "Printing Hello World in Python",
+                    "Summary": "
+                    The output of the code will be "Hello World", which is printed to the console.
+                    The 'print' function in Python is used to output the specified message to the screen. 
+                    In this case, the message is "Hello World". The code simply calls this function with the string "Hello World" as its argument. 
+                    When executed, the program will print this string to the console
+                    "
+                }
+                "
+                <\Example_1>
+
+                Follow the format specified in the above example.
                 ''',
             },
             {
                 "role": "user",
                 "content": inputData,
+            },
+            {
+                "role": "system",
+                "content":"Return the Title and Summary in short json object.",
             }
-        ]
+        ],
+        response_format = {
+          "type": "json_object",
+        }
     )
-    outputData = chat_response.choices[0].message.content 
+    outputData_string = chat_response.choices[0].message.content 
+    try:
+        outputData = json.loads(outputData_string, strict=False)
+    except json.JSONDecodeError:
+        # If JSON parsing fails, extract title and summary manually
+        outputData = {}  # Initialize empty dict
+        try:
+            title = clean(outputData_string.split("Title:")[1].split("Summary:")[0])
+            summary = clean(outputData_string.split("Summary:")[1])
+            outputData['Title'] = title
+            outputData['Summary'] = summary
+        except IndexError as e:
+            raise ValueError("Failed to parse string format: Missing Title or Summary sections") from e
+
     return outputData
 
 def regenerate_feedback(summary_data, feedback):
@@ -322,15 +352,32 @@ def regenerate_feedback(summary_data, feedback):
         messages = [
             {
                 "role": "system",
-                "content": "",
+                "content": prompts[inputType],
             },
             {
                 "role": "system",
-                "content": '''You should also give a title to the summary. Your output should strictly be of the below format.
-                
-                **Title:** (Title here)
-                
-                **Summary:** (Summary here)
+                "content":'''
+                This is an example showing how the format of the output should be, use this ONLY as an example and DO NOT fetch any data from this into your output. 
+                <Example_1>
+                Input:
+                "
+                    print('Hello World')
+                "
+                Output:
+                "
+                {
+                    "Title": "Printing Hello World in Python",
+                    "Summary": "
+                    The output of the code will be "Hello World", which is printed to the console.
+                    The 'print' function in Python is used to output the specified message to the screen. 
+                    In this case, the message is "Hello World". The code simply calls this function with the string "Hello World" as its argument. 
+                    When executed, the program will print this string to the console
+                    "
+                }
+                "
+                <\Example_1>
+
+                Follow the format specified in the above example.
                 ''',
             },
             {
@@ -347,9 +394,24 @@ def regenerate_feedback(summary_data, feedback):
             },
             {
                 "role": "system",
-                "content": "Regenerate the summary based on the feedback provided by the user. Make sure you strictly follow the same format for the output."
+                "content": "Regenerate the summary based on the feedback provided by the user. Return the Title and Summary in short json object."
             }
-        ]
+        ],
+        response_format = {
+          "type": "json_object",
+        }
     )
-    outputData = chat_response.choices[0].message.content 
+    outputData_string = chat_response.choices[0].message.content 
+
+    try:
+        outputData = json.loads(outputData_string, strict=False)
+    except json.JSONDecodeError:
+        # If JSON parsing fails, extract title and summary manually
+        outputData = {}  # Initialize empty dict
+        try:
+            summary = clean(outputData_string.split("Summary:")[1])
+            outputData['Summary'] = summary
+        except IndexError as e:
+            raise ValueError("Failed to parse string format: Missing Title or Summary sections") from e
+    outputData['Title'] = summary_data['title']
     return outputData
