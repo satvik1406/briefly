@@ -36,7 +36,6 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta):
     return encoded_jwt
 
 def service_create_new_user(user: User):
-    print(user)
     existing_user = users_collection_name.find_one({'email': user.email, 'phone': user.phone})
     if existing_user:
         raise ServiceError("User Already Exists", status_code=409)
@@ -48,7 +47,6 @@ def service_create_new_user(user: User):
 
 def service_verify_user(obj: User) -> dict:
     user = users_collection_name.find_one({'email': obj.email})
-    print(user)
     if user is None:
         raise NotFoundError("Account Does Not Exist")
     

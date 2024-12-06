@@ -131,10 +131,9 @@ async def get_shared_summaries(user_id: str, _ = Depends(verify_token)):
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to fetch shared summaries")
     
-@router.get("/summary/{summary_id}", status_code=status.HTTP_201_CREATED)
+@router.get("/summary/{summary_id}", status_code=status.HTTP_200_OK)
 async def get_summary(summary_id: str, _ = Depends(verify_token)):
     try:
-        print(summary_id)
         res = service_get_summary(summary_id)
         return {"status": "OK", "result": res}
     except ServiceError as e:
