@@ -5,6 +5,7 @@ from main import app
 from models.models import User, Summary
 import datetime
 import os
+from gridfs import GridFS
 from pymongo import MongoClient
 from io import BytesIO
 from reportlab.pdfgen import canvas
@@ -19,6 +20,7 @@ db = mongo_client.internaldb
 users_collection = db["users"]
 summaries_collection = db["summaries"]
 shared_summaries_collection = db["shared_summaries"]
+grid_fs = GridFS(db)
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_database():
@@ -65,10 +67,6 @@ def setup_database():
     )
     summary1_dict = summary1.dict()
     summary1_dict['_id']= str(uuid.uuid4())
-    print("user dict")
-    print(user1_dict)
-    print("summary dict")
-    print(summary1_dict)
     summary2_dict = summary2.dict()
     summary2_dict['_id']= str(uuid.uuid4())
     # Insert summaries into the database
@@ -202,7 +200,6 @@ def test_create_summary():
     
     response = client.post("/summary/create", json=summary_data_dict, headers=headers)
     response = response.json()
-    print("Create summary ",response)
     assert response["status"] == "OK"
     assert "summary_id" in response['result']
 
@@ -265,7 +262,6 @@ def test_share_summary_success():
     }
     recipient_email = "bob.johnson@example.com"
     share_response = client.post("/summary/share", json={"summary_id": summary["_id"], "recipient": recipient_email}, headers=headers)
-    print(share_response.json())
     assert share_response.status_code == 200
     assert share_response.json()["result"]["message"] == f"Summary shared successfully with {recipient_email}"
 
@@ -311,7 +307,6 @@ def test_share_summary_with_self():
         "password": "password123"
     }
     response = client.post("/user/verify", json=user_data)
-    print(response.json())
     auth_token = response.json()['result']['auth_token']
     userId = response.json()['result']['user']['id']
     summary = summaries_collection.find_one({'userId': userId})
@@ -378,7 +373,6 @@ def test_get_shared_summaries_success():
     }
     recipient_email = "bob.johnson@example.com"
     share_response = client.post("/summary/share", json={"summary_id": summary["_id"], "recipient": recipient_email}, headers=headers)
-    print(share_response.json())
 
     user = users_collection.find_one({'email':recipient_email})
     response = client.get(f"/user/{user["_id"]}/shared-summaries", headers={"Authorization": f"Bearer {auth_token}"})
@@ -518,3 +512,157 @@ async def test_extract_text_from_docx(sample_docx):
     # Check if the text was extracted correctly
     assert "Hello World" in extracted_text
     assert "This is a test DOCX file" in extracted_text
+
+def test_regenerate_feedback_with_text():
+    """Test regenerating a summary with feedback for text-based summary."""
+    # First create and verify a user to get auth token
+    user_data = {
+        "email": "alice.smith@example.com",
+        "password": "password123"
+    }
+    response = client.post("/user/verify", json=user_data)
+    auth_token = response.json()['result']['auth_token']
+    
+    # Get an existing summary for the user
+    userId = response.json()['result']['user']['id']
+    summary = summaries_collection.find_one({'userId': userId})
+    
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    
+    feedback = "Please make it more concise"
+    
+    # Call the regenerate endpoint
+    response = client.post(
+        f"/summary/regenerate/{summary['_id']}", 
+        json=feedback,
+        headers=headers
+    )
+    
+    assert response.status_code == 201
+    assert "result" in response.json()
+    new_summary = response.json()["result"]
+    assert isinstance(new_summary, dict)
+
+def test_regenerate_feedback_with_file():
+    """Test regenerating a summary with feedback for file-based summary."""
+    # First create and verify a user to get auth token
+    user_data = {
+        "email": "alice.smith@example.com",
+        "password": "password123"
+    }
+    response = client.post("/user/verify", json=user_data)
+    auth_token = response.json()['result']['auth_token']
+    userId = response.json()['result']['user']['id']
+    
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    
+    # Create a test file and upload it
+    test_content = "This is test content from a file"
+    test_file = BytesIO(test_content.encode('utf-8'))
+    files = {
+        "file": ("test.txt", test_file, "text/plain")
+    }
+    form_data = {
+        "userId": userId,
+        "type": "documentation",
+        "uploadType": "upload"
+    }
+    
+    upload_response = client.post(
+        "/summary/upload",
+        data=form_data,
+        files=files,
+        headers=headers
+    )
+    assert upload_response.status_code == 201
+    
+    # Get the created summary
+    summaries_response = client.get(f"/summaries/{userId}", headers=headers)
+    summary = summaries_response.json()["result"][0]
+    
+    # Regenerate the summary
+    feedback = "Please make it more technical"
+    response = client.post(
+        f"/summary/regenerate/{summary['id']}", 
+        json=feedback,
+        headers=headers
+    )
+    
+    assert response.status_code == 201
+    assert "result" in response.json()
+    new_summary = response.json()["result"]
+    assert isinstance(new_summary, dict)
+
+def test_regenerate_feedback_code_type():
+    """Test regenerating a summary with feedback for code-type content."""
+    # First create and verify a user to get auth token
+    user_data = {
+        "email": "alice.smith@example.com",
+        "password": "password123"
+    }
+    response = client.post("/user/verify", json=user_data)
+    auth_token = response.json()['result']['auth_token']
+    userId = response.json()['result']['user']['id']
+    
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    
+    # Create a code summary
+    summary_data = {
+        "userId": userId,
+        "type": "code",
+        "uploadType": "upload",
+        "initialData": "def hello():\n    print('Hello World')",
+        "createdAt": datetime.datetime.now(datetime.UTC).isoformat()
+    }
+    
+    create_response = client.post(
+        "/summary/create", 
+        json=summary_data,
+        headers=headers
+    )
+    assert create_response.status_code == 201
+    summary_id = create_response.json()["result"]["summary_id"]
+    
+    # Regenerate the summary
+    feedback = "Please explain the function parameters"
+    response = client.post(
+        f"/summary/regenerate/{summary_id}", 
+        json=feedback,
+        headers=headers
+    )
+    
+    assert response.status_code == 201
+    assert "result" in response.json()
+    new_summary = response.json()["result"]
+    assert isinstance(new_summary, dict)
+
+def test_regenerate_feedback_invalid_summary():
+    """Test regenerating a summary that doesn't exist."""
+    # First create and verify a user to get auth token
+    user_data = {
+        "email": "alice.smith@example.com",
+        "password": "password123"
+    }
+    response = client.post("/user/verify", json=user_data)
+    auth_token = response.json()['result']['auth_token']
+    
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    
+    invalid_summary_id = "nonexistent_id"
+    feedback = "Please make it more concise"
+    
+    response = client.post(
+        f"/summary/regenerate/{invalid_summary_id}", 
+        json=feedback,
+        headers=headers
+    )
+    
+    assert response.status_code == 404
