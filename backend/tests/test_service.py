@@ -8,13 +8,13 @@ import os
 from pymongo import MongoClient
 from io import BytesIO
 from reportlab.pdfgen import canvas
-from config.database import db
 # Set the environment variable for the test database
 os.environ['DATABASE_URL'] = 'mongodb+srv://admin:admin123@cluster0.jkvhz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'  # Adjust as necessary
 
 client = TestClient(app)
 
 mongo_client = MongoClient(os.environ['DATABASE_URL'])
+db = mongo_client.internaldb
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_database():
@@ -22,11 +22,9 @@ def setup_database():
     summaries_collection = db["summaries"]
     shared_summaries_collection = db["shared_summaries"]
 
-    # Drop collections to ensure a clean state
     users_collection.drop()
     summaries_collection.drop()
     shared_summaries_collection.drop()
-
     # Dummy data for users
     user1 = User(
         firstName="Alice",
@@ -74,9 +72,8 @@ def setup_database():
     # Insert summaries into the database
     summaries_collection.insert_many([summary1_dict, summary2_dict])  # Convert to dict for insertion
     yield
-    # users_collection.drop()
-    # summaries_collection.drop()
-    # shared_summaries_collection.drop()
+
+
     
 
 @pytest.fixture
@@ -173,13 +170,34 @@ def test_verify_user():
         "password": "password123"
     }
     response = client.post("/user/verify", json=user_data)
-    print(response)
     assert response.status_code == 200
     assert "auth_token" in response.json()["result"]
     
-def test_create_summary(create_summary):
-    assert create_summary[0]["status"] == "OK"
-    assert "summary_id" in create_summary[0]["result"]
+def test_create_summary():
+    user_data = {
+        "email": "alice.smith@example.com",
+        "password": "password123"
+    }
+    response = client.post("/user/verify", json=user_data)
+    auth_token = response.json()['result']['auth_token'] 
+    userId = response.json()['result']['user']['id']
+    summary_data_dict = {
+        "userId": userId,
+        "type": "code",
+        "uploadType": "upload",
+        "initialData": "print('Hello World')",
+        "createdAt": datetime.datetime.now(datetime.UTC).isoformat()  # Convert to ISO format string
+    }
+    
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    
+    response = client.post("/summary/create", json=summary_data_dict, headers=headers)
+    response = response.json()
+    print("Create summary ",response)
+    assert response["status"] == "OK"
+    assert "summary_id" in response['result']
 
 def test_user_summaries(create_user):
     print("Test User Summaries Response:", create_user)
