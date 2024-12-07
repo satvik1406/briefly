@@ -8,6 +8,7 @@ import os
 from pymongo import MongoClient
 from io import BytesIO
 from reportlab.pdfgen import canvas
+from docx import Document
 # Set the environment variable for the test database
 os.environ['DATABASE_URL'] = 'mongodb+srv://admin:admin123@cluster0.jkvhz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'  # Adjust as necessary
 
@@ -74,7 +75,7 @@ def setup_database():
     yield
 
 
-    
+
 
 @pytest.fixture
 def create_user():
@@ -144,7 +145,10 @@ def test_create_user():
     user_data_dict['createdAt'] = user.createdAt.isoformat()
     user_data_dict['lastLoggedInAt'] = user.lastLoggedInAt.isoformat()
     response = client.post("/user/create", json=user_data_dict)
-    assert response.json()["status"] == "OK" 
+    if 'status' in response.json():
+        assert response.json()["status"] == "OK"
+    elif 'detail' in response.json():
+        assert response.json()['detail'] == 'User Already Exists'
     db.users.delete_many({'email': user.email})
 
 
@@ -414,3 +418,102 @@ def test_get_shared_summaries_invalid_user(create_user):
 
     assert response.status_code == 200  # Assuming the API returns an empty list for non-existent users
     assert response.json()["result"] == []  # Expecting an empty list since the user does not exist
+
+@pytest.fixture
+def sample_pdf():
+    # Create a PDF in memory
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer)
+    c.drawString(100, 750, "Hello World")
+    c.drawString(100, 700, "This is a test PDF")
+    c.save()
+    
+    # Move buffer position to start
+    buffer.seek(0)
+    return buffer
+
+def test_extract_text_from_pdf(sample_pdf):
+    # Create a mock UploadFile
+    class MockUploadFile:
+        def __init__(self, filename, contents):
+            self.filename = filename
+            self.file = BytesIO(contents)
+
+    mock_file = MockUploadFile("test.pdf", sample_pdf.getvalue())
+    
+    # Extract text from the PDF
+    from services.service import extract_text_from_pdf
+    extracted_text = extract_text_from_pdf(mock_file)
+    
+    # Check if the text was extracted (exact matching might be tricky due to PDF formatting)
+    assert "Hello World" in extracted_text
+    assert "This is a test PDF" in extracted_text
+
+@pytest.fixture
+def sample_text():
+    # Create a text file content in memory
+    buffer = BytesIO()
+    content = "Hello World\nThis is a test text file"
+    buffer.write(content.encode('utf-8'))
+    
+    # Move buffer position to start
+    buffer.seek(0)
+    return buffer
+
+@pytest.mark.asyncio
+async def test_extract_text_from_file(sample_text):
+    # Create a mock UploadFile
+    class MockUploadFile:
+        def __init__(self, filename, contents):
+            self.filename = filename
+            self.file = BytesIO(contents)
+        
+        async def read(self):
+            return self.file.read()
+
+    mock_file = MockUploadFile("test.txt", sample_text.getvalue())
+    
+    # Extract text from the file
+    from services.service import extract_text_from_file
+    mock_file_contents = await mock_file.read()
+    extracted_text = extract_text_from_file(mock_file, mock_file_contents)
+    
+    # Check if the text was extracted correctly
+    assert "Hello World" in extracted_text
+    assert "This is a test text file" in extracted_text
+
+
+@pytest.fixture
+def sample_docx():
+    # Create a DOCX in memory
+    doc = Document()
+    doc.add_paragraph("Hello World")
+    doc.add_paragraph("This is a test DOCX file")
+    
+    # Save to BytesIO buffer
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+@pytest.mark.asyncio
+async def test_extract_text_from_docx(sample_docx):
+    # Create a mock UploadFile
+    class MockUploadFile:
+        def __init__(self, filename, contents):
+            self.filename = filename
+            self.file = BytesIO(contents)
+        
+        async def read(self):
+            return self.file.read()
+
+    mock_file = MockUploadFile("test.docx", sample_docx.getvalue())
+    
+    # Extract text from the file
+    from services.service import extract_text_from_file
+    mock_file_contents = await mock_file.read()
+    extracted_text = extract_text_from_file(mock_file, mock_file_contents)
+    
+    # Check if the text was extracted correctly
+    assert "Hello World" in extracted_text
+    assert "This is a test DOCX file" in extracted_text

@@ -18,6 +18,7 @@ from mistralai import Mistral
 from config.database import grid_fs
 from bson import ObjectId
 from io import BytesIO
+from docx import Document
 
 SECRET_KEY = "your_secret_key"
 api_key = "UvZmnaaEx8y6tAYTjunw9dNDyXGe11qD"
@@ -91,16 +92,13 @@ def extract_text_from_file(file: UploadFile, contents: bytes) -> str:
         elif file.filename.endswith(('.txt', '.py', '.js', '.html', '.css', '.json', '.md')):
             return contents.decode('utf-8')
         elif file.filename.endswith(('.doc', '.docx')):
-            # You'll need python-docx library for this
-            raise NotImplementedError("Word document support not implemented yet")
+            doc = Document(BytesIO(contents))
+            return '\n'.join([paragraph.text for paragraph in doc.paragraphs])
         else:
             return contents.decode('utf-8')
     except UnicodeDecodeError:
         # Try different encodings if UTF-8 fails
-        try:
-            return contents.decode('latin-1')
-        except UnicodeDecodeError:
-            raise ServiceError("Unable to decode file contents", status_code=400)
+        raise ServiceError("Unable to decode file contents", status_code=400)
 
 async def service_process_file(file: UploadFile, summary: Summary):
     file_contents = await file.read()
