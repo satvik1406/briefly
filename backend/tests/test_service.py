@@ -10,22 +10,19 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 from docx import Document
 # Set the environment variable for the test database
-os.environ['DATABASE_URL'] = 'mongodb+srv://admin:admin123@cluster0.jkvhz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'  # Adjust as necessary
+os.environ['DATABASE_URL'] = 'mongodb+srv://admin:user123@brieflyapplicationclust.g7ifw.mongodb.net/?retryWrites=true&w=majority&appName=BrieflyApplicationCluster'  # Adjust as necessary
 
 client = TestClient(app)
 
 mongo_client = MongoClient(os.environ['DATABASE_URL'])
 db = mongo_client.internaldb
+users_collection = db["users"]
+summaries_collection = db["summaries"]
+shared_summaries_collection = db["shared_summaries"]
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_database():
-    users_collection = db["users"]
-    summaries_collection = db["summaries"]
-    shared_summaries_collection = db["shared_summaries"]
 
-    users_collection.drop()
-    summaries_collection.drop()
-    shared_summaries_collection.drop()
     # Dummy data for users
     user1 = User(
         firstName="Alice",
@@ -36,7 +33,7 @@ def setup_database():
         confirmPassword="password123"
     )
     user1_dict = user1.dict()
-    user1_dict['_id']= str(uuid.uuid4())
+    user1_dict['_id']= "03b4aab0-02bf-4920-be97-301f942dadc9"
     user2 = User(
         firstName="Bob",
         lastName="Johnson",
@@ -46,20 +43,20 @@ def setup_database():
         confirmPassword="password123"
     )
     user2_dict = user2.dict()
-    user2_dict['_id']= str(uuid.uuid4())
+    user2_dict['_id']= "aac0c1cc-8af4-4501-81a4-ee10a90cbbcb"
     # Insert users into the database
     users_collection.insert_many([user1_dict, user2_dict])  # Convert to dict for insertion
 
     # Dummy data for summaries
     summary1 = Summary(
-        userId=str(uuid.uuid4()),  # Assuming userId is stored as email for this example
+        userId= "03b4aab0-02bf-4920-be97-301f942dadc9",  
         type="code",
         uploadType="upload",
         initialData="print('Hello from Alice')",
         outputData= "This is a sample summary"
     )
     summary2 = Summary(
-        userId=str(uuid.uuid4()),  # Assuming userId is stored as email for this example
+        userId="aac0c1cc-8af4-4501-81a4-ee10a90cbbcb", 
         type="code",
         uploadType="upload",
         title="Title",
@@ -68,13 +65,18 @@ def setup_database():
     )
     summary1_dict = summary1.dict()
     summary1_dict['_id']= str(uuid.uuid4())
+    print("user dict")
+    print(user1_dict)
+    print("summary dict")
+    print(summary1_dict)
     summary2_dict = summary2.dict()
     summary2_dict['_id']= str(uuid.uuid4())
     # Insert summaries into the database
     summaries_collection.insert_many([summary1_dict, summary2_dict])  # Convert to dict for insertion
     yield
-
-
+    users_collection.delete_one({"email": user1.email})
+    users_collection.delete_one({"email": user2.email})
+    summaries_collection.delete_many({"userId": {"$in": [user1_dict["_id"], user2_dict["_id"]]}})
 
 
 @pytest.fixture
@@ -133,14 +135,15 @@ def create_summary(create_user):
 
 def test_create_user():
     user = User(
-            firstName="Test",
-            lastName="User",
+            firstName="Abraham",
+            lastName="Lincoln",
             phone="+14132072934",
-            email="testnewuser@example.com",
-            password="password123",
-            confirmPassword="password123"
+            email="alincoln@example.com",
+            password="password13",
+            confirmPassword="password13"
         )
     # Convert datetime fields to ISO format for JSON serialization
+    users_collection.delete_many({'email': user.email})
     user_data_dict = user.dict()
     user_data_dict['createdAt'] = user.createdAt.isoformat()
     user_data_dict['lastLoggedInAt'] = user.lastLoggedInAt.isoformat()
@@ -203,26 +206,37 @@ def test_create_summary():
     assert response["status"] == "OK"
     assert "summary_id" in response['result']
 
-def test_user_summaries(create_user):
-    print("Test User Summaries Response:", create_user)
-    user_id = create_user["result"]["user"].get("id")
-    assert user_id is not None, "User ID should not be None"
-    auth_token = create_user["result"]["auth_token"]
+def test_user_summaries():
+    user_data = {
+        "email": "alice.smith@example.com",
+        "password": "password123"
+    }
+    response = client.post("/user/verify", json=user_data)
+    auth_token = response.json()['result']['auth_token'] 
+    userId = response.json()['result']['user']['id']
+
+    assert userId is not None, "User ID should not be None"
     headers = {
         "Authorization": f"Bearer {auth_token}"
     }
-    response = client.get(f"/summaries/{user_id}",headers=headers)
-    print("Test User Summaries Response:", response.json())
+    response = client.get(f"/summaries/{userId}",headers=headers)
     assert response.status_code == 200
     assert isinstance(response.json()["result"], list)
 
-def test_delete_summary(create_summary):
-    summary_id = create_summary[0]["result"]["summary_id"]
-    auth_token = create_summary[1]
+def test_delete_summary():
+    user_data = {
+        "email": "alice.smith@example.com",
+        "password": "password123"
+    }
+    response = client.post("/user/verify", json=user_data)
+    auth_token = response.json()['result']['auth_token'] 
+    userId = response.json()['result']['user']['id']
+    print(userId)
+    summary = summaries_collection.find_one({'userId': userId})
     headers = {
         "Authorization": f"Bearer {auth_token}"
     }
-    delete_response = client.delete(f"/summary/{summary_id}", headers=headers)
+    delete_response = client.delete(f"/summary/{summary["_id"]}", headers=headers)
     assert delete_response.status_code == 201
     assert delete_response.json()["result"]["message"] == "Summary deleted successfully"
 
@@ -236,22 +250,8 @@ def test_verify_non_existent_user():
     assert response.status_code == 404  # Expecting a 404 Not Found status
     assert response.json().get("detail") == "Account Does Not Exist"  # Adjust based on your actual error message 
 
-def test_share_summary_success(create_user, create_summary):
+def test_share_summary_success():
     """Test sharing a summary with another user successfully."""
-    # Create a second user
-    second_user_data = User(
-        firstName="Jane",
-        lastName="Doe",
-        phone="+14132752735",
-        email="jane.doe@example.com",
-        password="password123",
-        confirmPassword="password123"
-    )
-    second_user_data_dict = second_user_data.dict()
-    second_user_data_dict['createdAt'] = second_user_data.createdAt.isoformat()
-    second_user_data_dict['lastLoggedInAt'] = second_user_data.lastLoggedInAt.isoformat()
-    second_user_response = client.post("/user/create", json=second_user_data_dict)
-
     # Share the summary created by the first user
     summary_id = create_summary[0]["result"]["summary_id"]
     auth_token = create_summary[1]
