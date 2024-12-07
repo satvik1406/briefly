@@ -39,10 +39,10 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-const SummariesList = ({onNewSummaryClick}) => {
+const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}) => {
   const { userData } = useAuth(); // Get user info from Auth context
   const [summaries, setSummaries] = useState([]);
-  const [selectedSummary, setSelectedSummary] = useState(null); // State for the selected summary
+  // const [selectedSummary, setSelectedSummary] = useState(null); // State for the selected summary
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

@@ -12,6 +12,7 @@ const Dashboard = () => {
   const [openNewDialog, setOpenNewDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedSummary, setSelectedSummary] = useState(null); 
 
   useEffect(() => {
     const fetchSummaries = async () => {
@@ -36,12 +37,18 @@ const Dashboard = () => {
 
   const handleNewSummary = async (newSummary) => {
     try {
-      setOpenNewDialog(false);
-      debugger;
-      setRefreshKey((prevKey) => prevKey + 1);
+        setOpenNewDialog(false);
+        const response = await getUserSummaries(userData.id);
+        if (response.status !== "OK") {
+            throw new Error('Failed to fetch summaries');
+        }
+        
+        const updatedSummaries = response.result;
+        setSummaries(updatedSummaries);
+        const selectedSummary = updatedSummaries.find((summary) => summary.id === newSummary.result.summary_id);
+        setSelectedSummary(selectedSummary);
     } catch (error) {
-      console.error('Error creating summary:', error);
-      // Handle error appropriately
+        console.error('Error creating summary:', error);
     }
   };
 
@@ -71,7 +78,9 @@ const Dashboard = () => {
       }}>
         <Container sx={{ flexGrow: 10, py: 4 }}>
           <SummariesList 
-          summaries={summaries} 
+          // summaries={summaries}
+          selectedSummary={selectedSummary} // Pass the selected summary
+          setSelectedSummary={setSelectedSummary} // Pass the setter
           onNewSummaryClick={() => setOpenNewDialog(true)}
           />
         </Container>

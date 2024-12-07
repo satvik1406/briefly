@@ -27,6 +27,7 @@ const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
   const handleSubmitRegenerate = async () => {
     try {
         setRegenerating(true);
+        debugger;
         const regenerateSummary = {
             summaryId: summary.id,
             feedback: feedback,
@@ -109,30 +110,48 @@ const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
           <Typography variant="h6" sx={{ mt: 2, mb:2 }}>
             Input Data
           </Typography>
-          <Paper
-            elevation={0}
-            sx={{
-                mt: 1,
-                p: 2,
-                backgroundColor: 'grey.100',
-                borderRadius: 1,
-                display: 'flex',
-                alignItems: 'center',
-            }}
+          {summary.uploadType === 'upload' ? (
+            <Paper
+                elevation={0}
+                sx={{
+                    mt: 1,
+                    p: 2,
+                    backgroundColor: 'grey.100',
+                    borderRadius: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                }}
             >
-            <InsertDriveFile sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-            <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '16px'}}>
-                {summary.fileName || 'Uploaded File'}
-                </Typography>
-            </Box>
-            <IconButton>
-                <Download 
-                    sx={{ color: 'primary.main' }} 
-                    onClick = {handleFileDownload}    
-                />
-            </IconButton>
+                <InsertDriveFile sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '16px' }}>
+                        {summary.fileName || 'Uploaded File'}
+                    </Typography>
+                </Box>
+                <IconButton onClick={handleFileDownload}>
+                    <Download sx={{ color: 'primary.main' }} />
+                </IconButton>
             </Paper>
+          ) : (
+            <Paper
+                elevation={0}
+                sx={{
+                    mt: 1,
+                    p: 2,
+                    backgroundColor: 'grey.100',
+                    borderRadius: 1,
+                    overflow: 'auto',
+                    maxHeight: '300px',
+                }}
+            >
+                <Typography 
+                    variant="body1" 
+                    sx={{ whiteSpace: 'pre-wrap', fontSize: '16px', textAlign: 'justify' }}
+                >
+                    {summary.initialData || 'No initial data available.'}
+                </Typography>
+            </Paper>
+          )}
       
           {/* Output Data Section */}
           <Typography variant="h6" sx={{ mt: 2 }}>

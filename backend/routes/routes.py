@@ -66,9 +66,9 @@ async def create_summary_upload(
             uploadType=uploadType,
         )
 
-        file_id = await service_process_file(file, summary_data)
+        res = await service_process_file(file, summary_data)
         
-        return {"status": "OK", "file_id": file_id}
+        return {"status": "OK", "result": res}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     

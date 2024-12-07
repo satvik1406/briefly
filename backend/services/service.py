@@ -59,7 +59,7 @@ def service_verify_user(obj: User) -> dict:
     return {'auth_token': token, 'user': user_dict}  
 
 def service_user_summaries(userId: str) -> list:
-    summaries = summaries_collection_name.find({'userId': userId})
+    summaries = summaries_collection_name.find({'userId': userId}).sort("createdAt", -1)
     summary_list = summary_list_serialiser(summaries)
     if not summary_list:
         return []
@@ -205,7 +205,7 @@ def service_get_shared_summaries(user_id: str):
     """
     try:
         # Query shared summaries for the given user
-        shared_records = shared_summaries_collection_name.find({"recipient_id": user_id})
+        shared_records = shared_summaries_collection_name.find({"recipient_id": user_id}).sort("shared_at", -1)
         
         result = []
         for shared_record in shared_records:
