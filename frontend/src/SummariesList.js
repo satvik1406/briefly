@@ -240,10 +240,6 @@ const SummariesList = ({onNewSummaryClick}) => {
     );
   }
 
-  if (!summaries.length) {
-    return <Alert severity="info">No summaries available. Create one to get started!</Alert>;
-  }
-
   // Render list view
   return (
     <Box sx={{ p: 2 }}>
