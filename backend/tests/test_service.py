@@ -29,7 +29,6 @@ def setup_database():
 
     # Dummy data for users
     user1 = User(
-        _id=str(uuid.uuid4()),
         firstName="Alice",
         lastName="Smith",
         phone="+14132752733",
@@ -37,8 +36,9 @@ def setup_database():
         password="password123",
         confirmPassword="password123"
     )
+    user1_dict = user1.dict()
+    user1_dict['_id']= str(uuid.uuid4())
     user2 = User(
-        _id = str(uuid.uuid4()),
         firstName="Bob",
         lastName="Johnson",
         phone="+14132782738",
@@ -46,9 +46,10 @@ def setup_database():
         password="password123",
         confirmPassword="password123"
     )
-
+    user2_dict = user2.dict()
+    user2_dict['_id']= str(uuid.uuid4())
     # Insert users into the database
-    users_collection.insert_many([user1.dict(), user2.dict()])  # Convert to dict for insertion
+    users_collection.insert_many([user1_dict, user2_dict])  # Convert to dict for insertion
 
     # Dummy data for summaries
     summary1 = Summary(
@@ -66,13 +67,16 @@ def setup_database():
         initialData="print('Hello from Bob')",
         outputData= "This is a sample summary",
     )
-
+    summary1_dict = summary1.dict()
+    summary1_dict['_id']= str(uuid.uuid4())
+    summary2_dict = summary2.dict()
+    summary2_dict['_id']= str(uuid.uuid4())
     # Insert summaries into the database
-    summaries_collection.insert_many([summary1.dict(), summary2.dict()])  # Convert to dict for insertion
+    summaries_collection.insert_many([summary1_dict, summary2_dict])  # Convert to dict for insertion
     yield
-    users_collection.drop()
-    summaries_collection.drop()
-    shared_summaries_collection.drop()
+    # users_collection.drop()
+    # summaries_collection.drop()
+    # shared_summaries_collection.drop()
     
 
 @pytest.fixture
