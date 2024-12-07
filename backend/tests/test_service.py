@@ -11,10 +11,11 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 from docx import Document
 from gridfs import GridFS
-from services.service import service_download_file, extract_text_from_pdf
+from services.service import service_download_file
 from fastapi.responses import StreamingResponse
 from bson import ObjectId
 from fastapi.exceptions import HTTPException
+import time
 
 # Set the environment variable for the test database
 os.environ['DATABASE_URL'] = 'mongodb+srv://admin:user123@brieflyapplicationclust.g7ifw.mongodb.net/?retryWrites=true&w=majority&appName=BrieflyApplicationCluster'  # Adjust as necessary
@@ -185,6 +186,8 @@ def test_regenerate_feedback_with_file():
         "type": "documentation",
         "uploadType": "upload"
     }
+
+    time.sleep(6)
     
     upload_response = client.post(
         "/summary/upload",
@@ -200,8 +203,8 @@ def test_regenerate_feedback_with_file():
     # Get the created summary
     summaries_response = client.get(f"/summaries/{userId}", headers=headers)
     summary = summaries_response.json()["result"][0]
-    import time 
-    time.sleep(60)
+ 
+    time.sleep(3)
     # Regenerate the summary
     feedback = "Please make it more technical"
     response = client.post(
@@ -238,6 +241,8 @@ def test_regenerate_feedback_code_type():
         "initialData": "def hello():\n    print('Hello World')",
         "createdAt": datetime.datetime.now(datetime.UTC).isoformat()
     }
+
+    time.sleep(3)
     
     create_response = client.post(
         "/summary/create", 
@@ -246,6 +251,8 @@ def test_regenerate_feedback_code_type():
     )
     assert create_response.status_code == 201
     summary_id = create_response.json()["result"]["summary_id"]
+    
+    time.sleep(3)
     
     # Regenerate the summary
     feedback = "Please explain the function parameters"
@@ -304,7 +311,8 @@ def test_create_summary():
     headers = {
         "Authorization": f"Bearer {auth_token}"
     }
-    
+
+    time.sleep(3)
     response = client.post("/summary/create", json=summary_data_dict, headers=headers)
     response = response.json()
     assert response["status"] == "OK"
@@ -751,7 +759,7 @@ def test_summary_upload(sample_text):
         "uploadType": "upload",
     }
 
-    print("THe auth token is: ", auth_token)
+    time.sleep(3)
 
     response = client.post(
         "/summary/upload",

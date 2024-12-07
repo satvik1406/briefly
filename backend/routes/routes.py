@@ -14,9 +14,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Security(security))
     try:
         jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         return
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError:
+    except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 @router.post("/user/create", status_code=status.HTTP_201_CREATED)
@@ -113,8 +111,6 @@ async def share_summary(summary_id: str = Body(...), recipient: str = Body(...),
         # Call the service function to share the summary
         res = service_share_summary(summary_id, recipient)
         return {"status": "OK", "result": res}
-    except NotFoundError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
     except ServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     
@@ -126,8 +122,6 @@ async def get_shared_summaries(user_id: str, _ = Depends(verify_token)):
     try:
         summaries = service_get_shared_summaries(user_id)
         return {"status": "OK", "result": summaries}
-    except NotFoundError as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to fetch shared summaries")
     
