@@ -247,8 +247,9 @@ def service_get_summary(summary_id: str):
 
 def service_download_file(file_id: str):
     # Fetch the file from GridFS
-    grid_out = grid_fs.get(ObjectId(file_id))
-    if not grid_out:
+    try:
+        grid_out = grid_fs.get(ObjectId(file_id))
+    except Exception:
         raise HTTPException(status_code=404, detail="File not found")
 
     # Stream the file in chunks

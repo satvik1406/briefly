@@ -10,6 +10,12 @@ from pymongo import MongoClient
 from io import BytesIO
 from reportlab.pdfgen import canvas
 from docx import Document
+from gridfs import GridFS
+from services.service import service_download_file, extract_text_from_pdf
+from fastapi.responses import StreamingResponse
+from bson import ObjectId
+from fastapi.exceptions import HTTPException
+
 # Set the environment variable for the test database
 os.environ['DATABASE_URL'] = 'mongodb+srv://admin:user123@brieflyapplicationclust.g7ifw.mongodb.net/?retryWrites=true&w=majority&appName=BrieflyApplicationCluster'  # Adjust as necessary
 
@@ -152,6 +158,107 @@ def test_create_user():
         assert response.json()['detail'] == 'User Already Exists'
     db.users.delete_many({'email': user.email})
 
+
+def test_regenerate_feedback_with_file():
+    """Test regenerating a summary with feedback for file-based summary."""
+    # First create and verify a user to get auth token
+    user_data = {
+        "email": "alice.smith@example.com",
+        "password": "password123"
+    }
+    response = client.post("/user/verify", json=user_data)
+    auth_token = response.json()['result']['auth_token']
+    userId = response.json()['result']['user']['id']
+    
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    
+    # Create a test file and upload it
+    test_content = "This is test content from a file"
+    test_file = BytesIO(test_content.encode('utf-8'))
+    files = {
+        "file": ("test.txt", test_file, "text/plain")
+    }
+    form_data = {
+        "userId": userId,
+        "type": "documentation",
+        "uploadType": "upload"
+    }
+    
+    upload_response = client.post(
+        "/summary/upload",
+        data=form_data,
+        files=files,
+        headers=headers
+    )
+    print("upload_response")
+    print(upload_response)
+    print("upload_response")
+    assert upload_response.status_code == 201
+    
+    # Get the created summary
+    summaries_response = client.get(f"/summaries/{userId}", headers=headers)
+    summary = summaries_response.json()["result"][0]
+    import time 
+    time.sleep(60)
+    # Regenerate the summary
+    feedback = "Please make it more technical"
+    response = client.post(
+        f"/summary/regenerate/{summary['id']}", 
+        json=feedback,
+        headers=headers
+    )
+
+    assert response.status_code == 201
+    assert "result" in response.json()
+    new_summary = response.json()["result"]
+    assert isinstance(new_summary, dict)
+
+def test_regenerate_feedback_code_type():
+    """Test regenerating a summary with feedback for code-type content."""
+    # First create and verify a user to get auth token
+    user_data = {
+        "email": "alice.smith@example.com",
+        "password": "password123"
+    }
+    response = client.post("/user/verify", json=user_data)
+    auth_token = response.json()['result']['auth_token']
+    userId = response.json()['result']['user']['id']
+    
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    
+    # Create a code summary
+    summary_data = {
+        "userId": userId,
+        "type": "code",
+        "uploadType": "upload",
+        "initialData": "def hello():\n    print('Hello World')",
+        "createdAt": datetime.datetime.now(datetime.UTC).isoformat()
+    }
+    
+    create_response = client.post(
+        "/summary/create", 
+        json=summary_data,
+        headers=headers
+    )
+    assert create_response.status_code == 201
+    summary_id = create_response.json()["result"]["summary_id"]
+    
+    # Regenerate the summary
+    feedback = "Please explain the function parameters"
+    response = client.post(
+        f"/summary/regenerate/{summary_id}", 
+        json=feedback,
+        headers=headers
+    )
+    
+    assert response.status_code == 201
+    assert "result" in response.json()
+    new_summary = response.json()["result"]
+    assert isinstance(new_summary, dict)
 
 def test_create_user_with_existing_email():
     user_data = User(
@@ -545,103 +652,6 @@ def test_regenerate_feedback_with_text():
     new_summary = response.json()["result"]
     assert isinstance(new_summary, dict)
 
-def test_regenerate_feedback_with_file():
-    """Test regenerating a summary with feedback for file-based summary."""
-    # First create and verify a user to get auth token
-    user_data = {
-        "email": "alice.smith@example.com",
-        "password": "password123"
-    }
-    response = client.post("/user/verify", json=user_data)
-    auth_token = response.json()['result']['auth_token']
-    userId = response.json()['result']['user']['id']
-    
-    headers = {
-        "Authorization": f"Bearer {auth_token}"
-    }
-    
-    # Create a test file and upload it
-    test_content = "This is test content from a file"
-    test_file = BytesIO(test_content.encode('utf-8'))
-    files = {
-        "file": ("test.txt", test_file, "text/plain")
-    }
-    form_data = {
-        "userId": userId,
-        "type": "documentation",
-        "uploadType": "upload"
-    }
-    
-    upload_response = client.post(
-        "/summary/upload",
-        data=form_data,
-        files=files,
-        headers=headers
-    )
-    assert upload_response.status_code == 201
-    
-    # Get the created summary
-    summaries_response = client.get(f"/summaries/{userId}", headers=headers)
-    summary = summaries_response.json()["result"][0]
-    
-    # Regenerate the summary
-    feedback = "Please make it more technical"
-    response = client.post(
-        f"/summary/regenerate/{summary['id']}", 
-        json=feedback,
-        headers=headers
-    )
-    
-    assert response.status_code == 201
-    assert "result" in response.json()
-    new_summary = response.json()["result"]
-    assert isinstance(new_summary, dict)
-
-def test_regenerate_feedback_code_type():
-    """Test regenerating a summary with feedback for code-type content."""
-    # First create and verify a user to get auth token
-    user_data = {
-        "email": "alice.smith@example.com",
-        "password": "password123"
-    }
-    response = client.post("/user/verify", json=user_data)
-    auth_token = response.json()['result']['auth_token']
-    userId = response.json()['result']['user']['id']
-    
-    headers = {
-        "Authorization": f"Bearer {auth_token}"
-    }
-    
-    # Create a code summary
-    summary_data = {
-        "userId": userId,
-        "type": "code",
-        "uploadType": "upload",
-        "initialData": "def hello():\n    print('Hello World')",
-        "createdAt": datetime.datetime.now(datetime.UTC).isoformat()
-    }
-    
-    create_response = client.post(
-        "/summary/create", 
-        json=summary_data,
-        headers=headers
-    )
-    assert create_response.status_code == 201
-    summary_id = create_response.json()["result"]["summary_id"]
-    
-    # Regenerate the summary
-    feedback = "Please explain the function parameters"
-    response = client.post(
-        f"/summary/regenerate/{summary_id}", 
-        json=feedback,
-        headers=headers
-    )
-    
-    assert response.status_code == 201
-    assert "result" in response.json()
-    new_summary = response.json()["result"]
-    assert isinstance(new_summary, dict)
-
 def test_regenerate_feedback_invalid_summary():
     """Test regenerating a summary that doesn't exist."""
     # First create and verify a user to get auth token
@@ -666,3 +676,135 @@ def test_regenerate_feedback_invalid_summary():
     )
     
     assert response.status_code == 404
+
+def test_service_download_file_not_found():
+    """Test downloading a file that does not exist."""
+    # Use a valid ObjectId format that does not exist in the GridFS collection
+    non_existent_file_id = "507f1f77bcf86cd799439011"
+
+    # Ensure the service raises the expected HTTPException
+    with pytest.raises(HTTPException) as exc_info:
+        service_download_file(non_existent_file_id)
+
+    # Verify exception details
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "File not found"
+
+def test_service_download_file(sample_pdf):
+    grid_fs = GridFS(db)
+
+    file_id = grid_fs.put(
+        sample_pdf.getvalue(),
+        filename="test.pdf",
+        content_type="application/pdf"
+    )
+
+    try:
+        stored_file = grid_fs.get(file_id)
+        assert stored_file.filename == "test.pdf"
+        assert stored_file.content_type == "application/pdf"
+    except Exception as e:
+        pytest.fail(f"File was not stored correctly: {e}")
+
+    response = service_download_file(str(file_id))
+    assert isinstance(response, StreamingResponse)
+
+    assert response.headers["Content-Disposition"] == "attachment; filename=test.pdf"
+    assert response.headers["content-type"] == "application/pdf"
+
+    grid_fs.delete(file_id)
+
+def test_download_file(sample_pdf):
+    grid_fs = GridFS(db)
+    # Step 1: Store the file in GridFS
+    file_id = grid_fs.put(
+        sample_pdf.getvalue(),
+        filename="test.pdf",
+        content_type="application/pdf"
+    )
+
+    response = client.get(f"/download/{str(file_id)}")
+
+    # Verify the response
+    assert response.status_code == 200
+    assert response.headers["Content-Disposition"] == "attachment; filename=test.pdf"
+    assert response.headers["content-type"] == "application/pdf"
+    # assert response.content == b"This is a test PDF content."
+
+    # Cleanup: Delete the test file from GridFS
+    grid_fs.delete(file_id)
+
+
+def test_summary_upload(sample_text):
+    """Test the /summary/upload endpoint."""
+    file_to_upload = ("file", ("test_file.txt", sample_text, "text/plain"))
+    user_data = {
+        "email": "alice.smith@example.com",
+        "password": "password123"
+    }
+    response = client.post("/user/verify", json=user_data)
+    auth_token = response.json()['result']['auth_token'] 
+    userId = response.json()['result']['user']['id']
+    data = {
+        "userId": userId,
+        "type": "code",
+        "uploadType": "upload",
+    }
+
+    print("THe auth token is: ", auth_token)
+
+    response = client.post(
+        "/summary/upload",
+        data=data,
+        files=[file_to_upload],
+        headers={
+            "Authorization": f"Bearer {auth_token}",
+        },
+    )
+
+    print("The response is ",response.json())
+
+    assert response.status_code == 201
+    json_response = response.json()
+    assert json_response["status"] == "OK"
+    assert "file_id" in json_response
+
+def test_user_summaries_empty():
+    """Test retrieving summaries for a user with no summaries."""
+    new_user = User(
+        firstName="Empty",
+        lastName="User",
+        phone="+14132752739",
+        email="empty.user@example.com",
+        password="password123",
+        confirmPassword="password123"
+    )
+    
+    user_data_dict = new_user.dict()
+    user_data_dict['createdAt'] = new_user.createdAt.isoformat()
+    user_data_dict['lastLoggedInAt'] = new_user.lastLoggedInAt.isoformat()
+    
+    response = client.post("/user/create", json=user_data_dict)
+    assert response.status_code == 201
+    
+    verify_data = {
+        "email": new_user.email,
+        "password": new_user.password
+    }
+    verify_response = client.post("/user/verify", json=verify_data)
+    assert verify_response.status_code == 200
+    
+    auth_token = verify_response.json()['result']['auth_token']
+    userId = verify_response.json()['result']['user']['id']
+    
+    headers = {
+        "Authorization": f"Bearer {auth_token}"
+    }
+    
+    summaries_response = client.get(f"/summaries/{userId}", headers=headers)
+    
+    assert summaries_response.status_code == 200
+    assert summaries_response.json()["result"] == []
+    
+    users_collection.delete_one({"email": new_user.email})
+
