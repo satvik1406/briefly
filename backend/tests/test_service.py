@@ -775,7 +775,7 @@ def test_summary_upload(sample_text):
     assert response.status_code == 201
     json_response = response.json()
     assert json_response["status"] == "OK"
-    assert "file_id" in json_response
+    assert "file_id" in json_response["result"]
 
 def test_user_summaries_empty():
     """Test retrieving summaries for a user with no summaries."""

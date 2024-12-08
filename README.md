@@ -52,8 +52,14 @@ Briefly is a summarization tool designed to help users summarize code, research 
    ```bash
    pip install -r requirements.txt
    ```
-
-3. Start the FastAPI server:
+3. Set environment variables:
+   Create a .env file in the backend folder and add the below variables
+   ```bash
+   SECRET_KEY="your_secret_key"
+   MISTRAL_API_KEY="UvZmnaaEx8y6tAYTjunw9dNDyXGe11qD"
+   DATABASE_URL="mongodb+srv://admin:user123@brieflyapplicationclust.g7ifw.mongodb.net/?retryWrites=true&w=majority&appName=BrieflyApplicationCluster"
+   ```
+4. Start the FastAPI server:
    ```bash
    uvicorn main:app --reload
    ```
@@ -107,5 +113,8 @@ Briefly is a summarization tool designed to help users summarize code, research 
 3. Run tests with coverage:
 ```bash
    pytest --cov=. tests/
-   pytest --cov=. --cov-report=html tests/ - for coverage report
+   ```
+   To get coverage report in a easily readable HTML format:
+```bash
+   pytest --cov=. --cov-report=html tests/
    ```
