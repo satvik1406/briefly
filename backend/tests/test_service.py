@@ -31,7 +31,14 @@ grid_fs = GridFS(db)
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_database():
-
+    """
+    Setup test database with dummy users and summaries.
+    Runs once per module and cleans up after all tests.
+    
+    Creates:
+    - Two users: Alice Smith and Bob Johnson
+    - Two summaries: One for each user
+    """
     # Dummy data for users
     user1 = User(
         firstName="Alice",
@@ -86,6 +93,12 @@ def setup_database():
 
 @pytest.fixture
 def create_user():
+    """
+    Fixture to create a test user or return existing user.
+    
+    Returns:
+        dict: User data including auth token and user details
+    """
     user = User(
             firstName="John",
             lastName="Doe",
@@ -139,6 +152,12 @@ def create_summary(create_user):
     return response.json(), auth_token
 
 def test_create_user():
+    """
+    Test user creation endpoint.
+    Expected Output:
+        - Status "OK" for new user
+        - "User Already Exists" for duplicate email
+    """
     user = User(
             firstName="Abraham",
             lastName="Lincoln",
@@ -161,6 +180,17 @@ def test_create_user():
 
 
 def test_regenerate_feedback_with_file():
+    """
+    Test regenerating a summary with feedback for file-based content.
+    
+    Steps:
+    1. Authenticate user
+    2. Create test file and upload
+    3. Get summary and regenerate with feedback
+    Expected Output:
+        - 201 status code
+        - New summary with regenerated content
+    """
     """Test regenerating a summary with feedback for file-based summary."""
     # First create and verify a user to get auth token
     user_data = {
@@ -219,7 +249,13 @@ def test_regenerate_feedback_with_file():
     assert isinstance(new_summary, dict)
 
 def test_regenerate_feedback_code_type():
-    """Test regenerating a summary with feedback for code-type content."""
+    """
+    Test regenerating a summary with code-type content.
+    
+    Expected Output:
+        - 201 status code
+        - New summary with regenerated content
+    """
     # First create and verify a user to get auth token
     user_data = {
         "email": "alice.smith@example.com",
@@ -268,6 +304,12 @@ def test_regenerate_feedback_code_type():
     assert isinstance(new_summary, dict)
 
 def test_create_user_with_existing_email():
+    """
+    Test creating a user with an email that already exists.
+    Expected Output:
+        - 409 status code
+        - "User Already Exists" error message
+    """
     user_data = User(
         firstName="Alice",
         lastName="Smith",
@@ -284,6 +326,13 @@ def test_create_user_with_existing_email():
     assert response.json().get("detail") == "User Already Exists"
 
 def test_verify_user():
+    """
+    Test user verification with valid credentials.
+    
+    Expected Output:
+        - 200 status code
+        - Response containing auth token
+    """
     user_data = {
         "email": "alice.smith@example.com",
         "password": "password123"
@@ -293,6 +342,13 @@ def test_verify_user():
     assert "auth_token" in response.json()["result"]
     
 def test_create_summary():
+    """
+    Test creating a new summary.
+    
+    Expected Output:
+        - "OK" status
+        - Response containing summary_id
+    """
     user_data = {
         "email": "alice.smith@example.com",
         "password": "password123"
@@ -319,6 +375,13 @@ def test_create_summary():
     assert "summary_id" in response['result']
 
 def test_user_summaries():
+    """
+    Test retrieving all summaries for a user.
+    
+    Expected Output:
+        - 200 status code
+        - List of user's summaries
+    """
     user_data = {
         "email": "alice.smith@example.com",
         "password": "password123"
@@ -336,6 +399,13 @@ def test_user_summaries():
     assert isinstance(response.json()["result"], list)
 
 def test_delete_summary():
+    """
+    Test deleting a specific summary.
+    
+    Expected Output:
+        - 201 status code
+        - Success message confirmation
+    """
     user_data = {
         "email": "alice.smith@example.com",
         "password": "password123"
@@ -362,7 +432,13 @@ def test_verify_non_existent_user():
     assert response.json().get("detail") == "Account Does Not Exist"  # Adjust based on your actual error message 
 
 def test_share_summary_success():
-    """Test sharing a summary with another user successfully."""
+    """
+    Test sharing a summary with another user.
+    
+    Expected Output:
+        - 200 status code
+        - Success message confirming share
+    """
     user_data = {
         "email": "alice.smith@example.com",
         "password": "password123"
@@ -381,7 +457,13 @@ def test_share_summary_success():
     assert share_response.json()["result"]["message"] == f"Summary shared successfully with {recipient_email}"
 
 def test_share_summary_not_found():
-    """Test sharing a summary that does not exist."""
+    """
+    Test sharing a non-existent summary.
+    
+    Expected Output:
+        - 404 status code
+        - "Summary not found" error message
+    """
     user_data = {
         "email": "alice.smith@example.com",
         "password": "password123"
@@ -398,7 +480,14 @@ def test_share_summary_not_found():
     assert share_response.json().get("detail") == "Summary not found"
 
 def test_share_summary_recipient_not_found():
-    """Test sharing a summary with a recipient that does not exist."""
+    """
+    Test sharing a summary with non-existent recipient.
+    
+   
+    Expected Output:
+        - 404 status code
+        - Error message about recipient not being registered
+    """
     user_data = {
         "email": "alice.smith@example.com",
         "password": "password123"
@@ -416,7 +505,13 @@ def test_share_summary_recipient_not_found():
     assert share_response.json().get("detail") == "The recipient must be a registered user of Briefly."
 
 def test_share_summary_with_self():
-    """Test sharing a summary with oneself."""
+    """
+    Test attempting to share a summary with oneself.
+    
+    Expected Output:
+        - 400 status code
+        - Error message preventing self-sharing
+    """
     user_data = {
         "email": "alice.smith@example.com",
         "password": "password123"
@@ -435,7 +530,14 @@ def test_share_summary_with_self():
     assert share_response.json().get("detail") == "Failed to share summary: 400: You cannot share a summary with yourself."
 
 def test_get_summary_success():
-    """Test successfully retrieving a summary."""
+    """
+    Test retrieving a specific summary.
+    
+    
+    Expected Output:
+        - 200 status code
+        - Summary details matching the requested ID
+    """
     user_data = {
         "email": "alice.smith@example.com",
         "password": "password123"
@@ -458,7 +560,12 @@ def test_get_summary_success():
     assert retrieved_summary["result"]["id"] == summary["_id"]  # Adjust based on your serializer output
 
 def test_get_summary_not_found():
-    """Test retrieving a summary that does not exist."""
+    """
+    Test retrieving a non-existent summary.
+    
+    Expected Output:
+        - ValueError with "Summary not found" message
+    """
     user_data = {
         "email": "alice.smith@example.com",
         "password": "password123"
@@ -472,7 +579,13 @@ def test_get_summary_not_found():
         response = client.get("/summary/non_existent_summary_id", headers=headers) 
 
 def test_get_shared_summaries_success():
-    """Test successfully retrieving shared summaries for a user."""
+    """
+    Test retrieving summaries shared with a user.
+    
+    Expected Output:
+        - 200 status code
+        - List of shared summaries
+    """
     # Create a second user
     user_data = {
         "email": "alice.smith@example.com",
@@ -496,7 +609,13 @@ def test_get_shared_summaries_success():
     assert len(response.json()["result"]) > 0  
 
 def test_get_shared_summaries_no_shared():
-    """Test retrieving shared summaries for a user with no shared summaries."""
+    """
+    Test retrieving shared summaries for user with none shared.
+    
+    Expected Output:
+        - 200 status code
+        - Empty list
+    """
     user_data = {
         "email": "alice.smith@example.com",
         "password": "password123"
@@ -513,7 +632,13 @@ def test_get_shared_summaries_no_shared():
     assert response.json()["result"] == []  # Expecting an empty list
 
 def test_get_shared_summaries_invalid_user():
-    """Test retrieving shared summaries for a non-existent user."""
+    """
+    Test retrieving shared summaries for invalid user.
+    
+    Expected Output:
+        - 200 status code
+        - Empty list
+    """
     user_data = {
         "email": "alice.smith@example.com",
         "password": "password123"
@@ -531,6 +656,12 @@ def test_get_shared_summaries_invalid_user():
 
 @pytest.fixture
 def sample_pdf():
+    """
+    Create a test PDF file in memory.
+    
+    Returns:
+        BytesIO: Buffer containing a simple PDF with test text
+    """
     # Create a PDF in memory
     buffer = BytesIO()
     c = canvas.Canvas(buffer)
@@ -543,6 +674,14 @@ def sample_pdf():
     return buffer
 
 def test_extract_text_from_pdf(sample_pdf):
+    """
+    Test PDF text extraction functionality.
+    
+    Input:
+        - PDF file containing "Hello World" and test text
+    Expected Output:
+        - Extracted text containing the PDF content
+    """
     # Create a mock UploadFile
     class MockUploadFile:
         def __init__(self, filename, contents):
@@ -572,6 +711,14 @@ def sample_text():
 
 @pytest.mark.asyncio
 async def test_extract_text_from_file(sample_text):
+    """
+    Test extracting text from a text file.
+    
+    Input:
+        - Text file with sample content
+    Expected Output:
+        - Extracted text matching input content
+    """
     # Create a mock UploadFile
     class MockUploadFile:
         def __init__(self, filename, contents):
@@ -608,6 +755,14 @@ def sample_docx():
 
 @pytest.mark.asyncio
 async def test_extract_text_from_docx(sample_docx):
+    """
+    Test extracting text from a DOCX file.
+    
+    Input:
+        - DOCX file with sample content
+    Expected Output:
+        - Extracted text matching input content
+    """
     # Create a mock UploadFile
     class MockUploadFile:
         def __init__(self, filename, contents):
@@ -629,7 +784,13 @@ async def test_extract_text_from_docx(sample_docx):
     assert "This is a test DOCX file" in extracted_text
 
 def test_regenerate_feedback_with_text():
-    """Test regenerating a summary with feedback for text-based summary."""
+    """
+    Test regenerating a text-based summary with feedback.
+    
+    Expected Output:
+        - 201 status code
+        - New regenerated summary
+    """
     # First create and verify a user to get auth token
     user_data = {
         "email": "alice.smith@example.com",
@@ -661,7 +822,12 @@ def test_regenerate_feedback_with_text():
     assert isinstance(new_summary, dict)
 
 def test_regenerate_feedback_invalid_summary():
-    """Test regenerating a summary that doesn't exist."""
+    """
+    Test regenerating an invalid summary.
+    
+    Expected Output:
+        - 404 status code
+    """
     # First create and verify a user to get auth token
     user_data = {
         "email": "alice.smith@example.com",
@@ -686,7 +852,13 @@ def test_regenerate_feedback_invalid_summary():
     assert response.status_code == 404
 
 def test_service_download_file_not_found():
-    """Test downloading a file that does not exist."""
+    """
+    Test downloading a non-existent file.
+    
+    Expected Output:
+        - HTTPException with 404 status code
+        - "File not found" error message
+    """
     # Use a valid ObjectId format that does not exist in the GridFS collection
     non_existent_file_id = "507f1f77bcf86cd799439011"
 
@@ -699,6 +871,15 @@ def test_service_download_file_not_found():
     assert exc_info.value.detail == "File not found"
 
 def test_service_download_file(sample_pdf):
+    """
+    Test downloading a valid file.
+    
+    Input:
+        - Valid PDF file in GridFS
+    Expected Output:
+        - StreamingResponse with correct headers
+        - PDF content matches input
+    """
     grid_fs = GridFS(db)
 
     file_id = grid_fs.put(
@@ -723,6 +904,16 @@ def test_service_download_file(sample_pdf):
     grid_fs.delete(file_id)
 
 def test_download_file(sample_pdf):
+    """
+    Test file download endpoint.
+    
+    Input:
+        - Valid file ID
+    Expected Output:
+        - 200 status code
+        - Correct content headers
+        - File content matches input
+    """
     grid_fs = GridFS(db)
     # Step 1: Store the file in GridFS
     file_id = grid_fs.put(
@@ -744,7 +935,17 @@ def test_download_file(sample_pdf):
 
 
 def test_summary_upload(sample_text):
-    """Test the /summary/upload endpoint."""
+    """
+    Test file upload functionality for summaries.
+    
+    Input:
+        - Text file
+    Expected Output:
+        - 201 status code
+        - Response containing file_id
+    
+    Note: Includes 3-second delay to prevent rate limiting
+    """
     file_to_upload = ("file", ("test_file.txt", sample_text, "text/plain"))
     user_data = {
         "email": "alice.smith@example.com",
@@ -778,7 +979,13 @@ def test_summary_upload(sample_text):
     assert "file_id" in json_response["result"]
 
 def test_user_summaries_empty():
-    """Test retrieving summaries for a user with no summaries."""
+    """
+    Test retrieving summaries for new user.
+    
+    Expected Output:
+        - 200 status code
+        - Empty list of summaries
+    """
     new_user = User(
         firstName="Empty",
         lastName="User",
