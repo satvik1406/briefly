@@ -1,4 +1,6 @@
 import uuid
+import os
+from dotenv import load_dotenv
 from models.models import User, Summary
 from config.database import users_collection_name, summaries_collection_name, grid_fs, shared_summaries_collection_name
 from schema.schema import *
@@ -19,14 +21,19 @@ from bson import ObjectId
 from io import BytesIO
 from docx import Document
 
-# Configuration and constants
-SECRET_KEY = "your_secret_key"  # JWT secret key for token generation
-api_key = "UvZmnaaEx8y6tAYTjunw9dNDyXGe11qD"  # Mistral AI API key
+# Load environment variables
+load_dotenv()
 
-# Predefined prompts for different types of content summarization
+# Replace hardcoded values with environment variables
+SECRET_KEY = os.getenv('SECRET_KEY')
+api_key = os.getenv('MISTRAL_API_KEY')
+
+if not SECRET_KEY or not api_key:
+    raise ValueError("Missing required environment variables. Please check your .env file.")
+
 prompts = {
     'code': "You are a code summarisation tool. Understand the given code and output the detailed summary of the code.",
-    'research': "You are a research article summarisation tool. Go through the research article given to you and give a detailed summary. Make sure your summary covers motivation, methodology, results and future improvements.",
+    'research': "You are a research article summarisation tool. Go through the research article given to you and give a detailed summary. Make sure your summary covers motivation, methodology, experiment results and future improvements.",
     'documentation': "You are a summarisation tool. You will be given a piece of text that you should summarize, make sure to cover as much content as you can. Be as technical as you can be."
 }
 
@@ -304,7 +311,7 @@ def call_to_AI(inputType, inputData):
             },
             {
                 "role": "system",
-                "content":'''
+                "content": '''
                 This is an example showing how the format of the output should be, use this only as an example and do not fetch any data from this into your output. 
 
                 <Example_1>
@@ -324,7 +331,7 @@ def call_to_AI(inputType, inputData):
                     "
                 }
                 "
-                <\Example_1>
+                </Example_1>
 
                 Follow the format specified in the above example.
                 ''',
@@ -355,8 +362,8 @@ def call_to_AI(inputType, inputData):
             summary = clean(outputData_string.split("Summary:")[1])
             outputData['Title'] = title
             outputData['Summary'] = summary
-        except IndexError as e:
-            raise ValueError("Failed to parse string format: Missing Title or Summary sections") from e
+        except IndexError:
+            outputData['Summary'] = clean(outputData_string)
 
     return outputData
 
@@ -395,7 +402,7 @@ def regenerate_feedback(summary_data, feedback):
             },
             {
                 "role": "system",
-                "content":'''
+                "content": '''
                 This is an example showing how the format of the output should be, use this ONLY as an example and DO NOT fetch any data from this into your output. 
                 <Example_1>
                 Input:
@@ -414,7 +421,7 @@ def regenerate_feedback(summary_data, feedback):
                     "
                 }
                 "
-                <\Example_1>
+                </Example_1>
 
                 Follow the format specified in the above example.
                 ''',
@@ -451,7 +458,7 @@ def regenerate_feedback(summary_data, feedback):
         try:
             summary = clean(outputData_string.split("Summary:")[1])
             outputData['Summary'] = summary
-        except IndexError as e:
-            raise ValueError("Failed to parse string format: Missing Title or Summary sections") from e
+        except IndexError:
+            outputData['Summary'] = clean(outputData_string)
     outputData['Title'] = summary_data['title']
     return outputData
