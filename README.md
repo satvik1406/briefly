@@ -16,7 +16,7 @@ Briefly is a summarization tool designed to help users summarize code, research 
 - **Backend**: FastAPI, MongoDB
 - **Libraries**: Axios for API requests, PyPDF2 for PDF handling, Mistral for AI summarization
 
-## Installation
+## Setup
 
 ### Prerequisites
 
@@ -67,10 +67,45 @@ Briefly is a summarization tool designed to help users summarize code, research 
 5. **Regenerate Summary**: Users can provide feedback to regenerate existing summaries.
 
 ## API Endpoints
+### Authentication
+- `POST /user/create`: Register a new user
+- `POST /user/verify`: Login user
 
+### Summaries
 - `POST /summary/create`: Create a new summary.
 - `POST /summary/upload`: Upload a file to create a summary.
 - `POST /summary/share`: Share a summary with another user.
 - `GET /user/{userId}/shared-summaries`: Fetch all summaries shared with a specific user.
 - `GET /summary/{summary_id}`: Fetch a specific summary.
+- `DELETE /summary/{summary_id}`: Delete a summary
+- `POST /summary/regenerate/{summary_id}`: Regenerate a summary with feedback
+- `POST /summary/share`: Share a summary with another user
+- `GET /shared-summaries/{user_id}`: Get summaries shared with a user
+- `GET /download/{file_id}`: Download original uploaded file
 
+## Testing
+
+### Frontend Testing
+
+
+### Backend Testing
+
+1. Install test dependencies:
+   ```bash
+   pip install pytest pytest-asyncio pytest-cov pytest-mock
+   ```
+
+
+2. Run the test suite:
+
+   ```bash
+   cd backend
+   export PYTHONPATH=.
+   pytest tests/
+   ```
+
+3. Run tests with coverage:
+```bash
+   pytest --cov=. tests/
+   pytest --cov=. --cov-report=html tests/ - for coverage report
+   ```
