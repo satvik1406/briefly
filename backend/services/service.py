@@ -31,6 +31,7 @@ api_key = os.getenv('MISTRAL_API_KEY')
 if not SECRET_KEY or not api_key:
     raise ValueError("Missing required environment variables. Please check your .env file.")
 
+# Predefined prompts for different types of content summarization
 prompts = {
     'code': "You are a code summarisation tool. Understand the given code and output the detailed summary of the code.",
     'research': "You are a research article summarisation tool. Go through the research article given to you and give a detailed summary. Make sure your summary covers motivation, methodology, experiment results and future improvements.",
@@ -39,7 +40,16 @@ prompts = {
 
 # Authentication functions
 def create_access_token(data: dict, expires_delta: datetime.timedelta):
-    """Creates a JWT token with expiration"""
+    """
+    Creates a JWT token with expiration.
+    
+    Args:
+        data (dict): Data to encode in the token
+        expires_delta (datetime.timedelta): Token expiration time
+    
+    Returns:
+        str: Encoded JWT token
+    """
     to_encode = data.copy()
     expire = datetime.datetime.now(datetime.timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
@@ -48,13 +58,24 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta):
 
 # User management functions
 def service_create_new_user(user: User):
-    """Creates a new user if email and phone are unique"""
-    # Check for existing user
+    """
+    Creates a new user if email and phone are unique.
+    
+    Args:
+        user (User): User object containing email, phone, and other details
+    
+    Returns:
+        dict: Message and userId of created user
+    
+    Raises:
+        ServiceError: If user already exists
+    """
+    # Check for existing user to prevent duplicates
     existing_user = users_collection_name.find_one({'email': user.email, 'phone': user.phone})
     if existing_user:
         raise ServiceError("User Already Exists", status_code=409)
 
-    # Create new user document
+    # Generate unique ID and insert user
     user_data = dict(user)
     user_data['_id'] = str(uuid.uuid4())
     users_collection_name.insert_one(user_data)
@@ -101,7 +122,22 @@ def service_create_summary(summary: Summary):
 
 # File processing functions
 def extract_text_from_file(file: UploadFile, contents: bytes) -> str:
-    """Extract text from various file types"""
+    """
+    Extracts text content from various file types.
+    
+    Args:
+        file (UploadFile): File object with filename and content type
+        contents (bytes): Raw file contents
+    
+    Returns:
+        str: Extracted text content
+    
+    Raises:
+        ServiceError: If file contents cannot be decoded
+    
+    Notes:
+        Supports PDF, TXT, common code files, DOC/DOCX formats
+    """
     try:
         # Handle different file types
         if file.filename.endswith('.pdf'):
@@ -117,33 +153,47 @@ def extract_text_from_file(file: UploadFile, contents: bytes) -> str:
         raise ServiceError("Unable to decode file contents", status_code=400)
 
 async def service_process_file(file: UploadFile, summary: Summary):
-    """Processes uploaded file, stores it in GridFS, and generates summary"""
-    # Read file contents
+    """
+    Processes uploaded file, stores it in GridFS, and generates summary.
+    
+    Args:
+        file (UploadFile): The uploaded file object
+        summary (Summary): Summary object containing metadata
+    
+    Returns:
+        dict: Contains message, summary_id, and file_id
+    
+    Raises:
+        ServiceError: If file processing fails
+    """
+    # Read file contents into memory
     file_contents = await file.read()
 
-    # Prepare metadata
+    # Store file metadata for later retrieval
     metadata = {
         "filename": file.filename,
         "content_type": file.content_type,
     }
 
-    # Store in GridFS
+    # Store file in GridFS with metadata
     file_id = grid_fs.put(
         file_contents,
         filename=metadata["filename"],
         content_type=metadata["content_type"]
     )
 
-    # Process and create summary
+    # Update metadata with GridFS ID
     metadata["file_id"] = str(file_id)
     summary.filedata = metadata
+
+    # Extract text and generate summary
     initialData = extract_text_from_file(file, file_contents)
     summary_data = dict(summary)
     outputData = call_to_AI(summary_data['type'], initialData)
     summary_data['outputData'] = outputData['Summary']
     summary_data['title'] = outputData['Title']  
 
-    # Save to database
+    # Generate unique ID and save summary
     summary_data['_id'] = str(uuid.uuid4())
     summaries_collection_name.insert_one(summary_data)
 
@@ -182,7 +232,15 @@ def service_regenrate_summary(summary_id: str, feedback: str):
     return {"message": "Summary regenerated successfully"}
 
 def extract_text_from_pdf(uploaded_file: UploadFile):
-    """Extracts text content from PDF files"""
+    """
+    Extracts text content specifically from PDF files.
+    
+    Args:
+        uploaded_file (UploadFile): PDF file to extract text from
+    
+    Returns:
+        str: Extracted text content from all pages
+    """
     text = ""
     pdf_reader = PdfReader(uploaded_file.file)
     for page_num in range(len(pdf_reader.pages)):
@@ -193,9 +251,17 @@ def extract_text_from_pdf(uploaded_file: UploadFile):
 def service_share_summary(summary_id: str, recipient: str):
     """
     Shares a summary with another user.
-    :param summary_id: ID of the summary to share
-    :param recipient: Recipient's email or username
-    :return: Success or failure message
+    
+    Args:
+        summary_id (str): ID of the summary to be shared
+        recipient (str): Email address of the recipient
+    
+    Returns:
+        dict: Success message with recipient info
+    
+    Raises:
+        NotFoundError: If summary or recipient doesn't exist
+        ServiceError: If sharing fails or user tries to share with themselves
     """
     try:
         # Verify summary exists
@@ -234,7 +300,16 @@ def service_share_summary(summary_id: str, recipient: str):
     
 def service_get_shared_summaries(user_id: str):
     """
-    Fetch summaries shared with a specific user.
+    Fetches all summaries shared with a specific user.
+    
+    Args:
+        user_id (str): ID of the user to fetch shared summaries for
+    
+    Returns:
+        list: List of shared summaries with sender information
+    
+    Raises:
+        ServiceError: If fetching shared summaries fails
     """
     try:
         # Query shared summaries
@@ -262,7 +337,18 @@ def service_get_shared_summaries(user_id: str):
         raise ServiceError(f"Failed to fetch shared summaries: {str(e)}")
 
 def service_get_summary(summary_id: str):
-    """Retrieves a specific summary by ID"""
+    """
+    Retrieves a specific summary by ID.
+    
+    Args:
+        summary_id (str): ID of the summary to retrieve
+    
+    Returns:
+        dict: Serialized summary object
+    
+    Raises:
+        ValueError: If summary not found
+    """
     summary = summaries_collection_name.find_one({"_id": summary_id})
     if not summary:
         raise ValueError("Summary not found")
@@ -270,17 +356,30 @@ def service_get_summary(summary_id: str):
     return summary
 
 def service_download_file(file_id: str):
-    """Streams file from GridFS for download"""
+    """
+    Streams file from GridFS for download.
+    
+    Args:
+        file_id (str): GridFS ID of the file to download
+    
+    Returns:
+        StreamingResponse: File stream with appropriate headers
+    
+    Raises:
+        HTTPException: If file not found (404)
+    """
     try:
+        # Retrieve file from GridFS
         grid_out = grid_fs.get(ObjectId(file_id))
     except Exception:
         raise HTTPException(status_code=404, detail="File not found")
 
-    # Stream file in chunks
+    # Create async generator for streaming file contents
     async def file_iterator():
-        while chunk := grid_out.read(1024 * 1024):  # 1 MB chunks
+        while chunk := grid_out.read(1024 * 1024):  # Read in 1MB chunks
             yield chunk
 
+    # Return streaming response with appropriate headers
     return StreamingResponse(
         file_iterator(),
         media_type=grid_out.content_type,
@@ -288,32 +387,41 @@ def service_download_file(file_id: str):
     )
 
 def clean(data):
-    """Removes special characters from start and end of string"""
+    """
+    Removes special characters from start and end of string.
+    
+    Args:
+        data (str): String to clean
+    
+    Returns:
+        str: Cleaned string with special characters removed from start and end
+    """
     return re.sub(r'^[^\w]+|[^\w]+$', '', data)
 
 def call_to_AI(inputType, inputData):
     """Processes input through Mistral AI for summarization"""
-    # Select appropriate model
+    # Select appropriate model based on content type
     model = "open-mistral-nemo"
     if inputType == "code":
         model = "open-codestral-mamba"
 
-    # Initialize Mistral client
+    # Initialize API client
     client = Mistral(api_key=api_key)
     
-    # Make API call
+    # Structure conversation with system prompts and user input
     chat_response = client.chat.complete(
         model = model,
         messages = [
+            # System role: Set context and behavior
             {
                 "role": "system",
                 "content": prompts[inputType],
             },
+            # System role: Provide output format example
             {
                 "role": "system",
                 "content": '''
-                This is an example showing how the format of the output should be, use this only as an example and do not fetch any data from this into your output. 
-
+                This is an example showing how the format of the output should be, use this ONLY as an example and DO NOT fetch any data from this into your output. 
                 <Example_1>
                 Input:
                 "
@@ -336,10 +444,12 @@ def call_to_AI(inputType, inputData):
                 Follow the format specified in the above example.
                 ''',
             },
+            # User role: Actual content to summarize
             {
                 "role": "user",
                 "content": inputData,
             },
+            # System role: Final formatting instruction
             {
                 "role": "system",
                 "content":"Return the Title and Summary in short json object.",
@@ -350,25 +460,42 @@ def call_to_AI(inputType, inputData):
         }
     )
 
-    # Process response
+    # Extract and parse response
     outputData_string = chat_response.choices[0].message.content 
     try:
+        # Attempt to parse JSON response
         outputData = json.loads(outputData_string, strict=False)
     except json.JSONDecodeError:
-        # Handle parsing errors
+        # Fallback parsing if JSON is malformed
         outputData = {}
         try:
+            # Extract title and summary using string splitting
             title = clean(outputData_string.split("Title:")[1].split("Summary:")[0])
             summary = clean(outputData_string.split("Summary:")[1])
             outputData['Title'] = title
             outputData['Summary'] = summary
         except IndexError:
+            # If splitting fails, use entire response as summary
             outputData['Summary'] = clean(outputData_string)
 
     return outputData
 
 def regenerate_feedback(summary_data, feedback):
-    """Regenerates summary based on user feedback using AI"""
+    """
+    Regenerates summary based on user feedback using AI.
+    
+    Args:
+        summary_data (dict): Original summary data containing type, initial data, and file info
+        feedback (str): User feedback for regenerating the summary
+    
+    Returns:
+        dict: Contains updated 'Title' and 'Summary' based on feedback
+    
+    Notes:
+        - Uses same model selection logic as initial summarization
+        - Maintains original title while updating summary
+        - Can handle both direct text and file-based summaries
+    """
     # Select model based on content type
     inputType = summary_data['type']
     model = "open-mistral-nemo"
