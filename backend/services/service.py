@@ -19,67 +19,84 @@ from bson import ObjectId
 from io import BytesIO
 from docx import Document
 
-SECRET_KEY = "your_secret_key"
-api_key = "UvZmnaaEx8y6tAYTjunw9dNDyXGe11qD"
+# Configuration and constants
+SECRET_KEY = "your_secret_key"  # JWT secret key for token generation
+api_key = "UvZmnaaEx8y6tAYTjunw9dNDyXGe11qD"  # Mistral AI API key
+
+# Predefined prompts for different types of content summarization
 prompts = {
     'code': "You are a code summarisation tool. Understand the given code and output the detailed summary of the code.",
     'research': "You are a research article summarisation tool. Go through the research article given to you and give a detailed summary. Make sure your summary covers motivation, methodology, results and future improvements.",
     'documentation': "You are a summarisation tool. You will be given a piece of text that you should summarize, make sure to cover as much content as you can. Be as technical as you can be."
 }
 
+# Authentication functions
 def create_access_token(data: dict, expires_delta: datetime.timedelta):
+    """Creates a JWT token with expiration"""
     to_encode = data.copy()
-    expire = datetime.datetime.now(datetime.timezone.utc
-                                   ) + expires_delta
+    expire = datetime.datetime.now(datetime.timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
     return encoded_jwt
 
+# User management functions
 def service_create_new_user(user: User):
+    """Creates a new user if email and phone are unique"""
+    # Check for existing user
     existing_user = users_collection_name.find_one({'email': user.email, 'phone': user.phone})
     if existing_user:
         raise ServiceError("User Already Exists", status_code=409)
 
+    # Create new user document
     user_data = dict(user)
     user_data['_id'] = str(uuid.uuid4())
     users_collection_name.insert_one(user_data)
     return {"message": "User created successfully", "userId": user_data['_id']}
 
 def service_verify_user(obj: User) -> dict:
+    """Verifies user credentials and returns auth token"""
+    # Find user by email
     user = users_collection_name.find_one({'email': obj.email})
     if user is None:
         raise NotFoundError("Account Does Not Exist")
     
+    # Generate JWT token
     token_expires = datetime.timedelta(days=30)
     token = create_access_token(
         data={"userId": user['_id']}, expires_delta=token_expires
     )
 
     user_dict = user_serialiser(user)
-
     return {'auth_token': token, 'user': user_dict}  
 
+# Summary management functions
 def service_user_summaries(userId: str) -> list:
+    """Retrieves all summaries for a user, sorted by creation date"""
+    # Query and sort summaries
     summaries = summaries_collection_name.find({'userId': userId}).sort("createdAt", -1)
     summary_list = summary_list_serialiser(summaries)
     if not summary_list:
         return []
-    
     return summary_list
 
 def service_create_summary(summary: Summary):
+    """Creates a new summary using AI processing"""
     summary_data = dict(summary)
+    # Process through AI
     outputData = call_to_AI(summary_data['type'],summary_data['initialData'])
     summary_data['outputData'] = outputData['Summary']
     summary_data['title'] = outputData['Title']   
     
+    # Save to database
     summary_data['_id'] = str(uuid.uuid4())
     summaries_collection_name.insert_one(summary_data)
     return {"message": "Summary created successfully", "summary_id": summary_data['_id']}
 
+# File processing functions
 def extract_text_from_file(file: UploadFile, contents: bytes) -> str:
-    """Extract text from various file types."""
+    """Extract text from various file types"""
     try:
+        # Handle different file types
         if file.filename.endswith('.pdf'):
             return extract_text_from_pdf(file)
         elif file.filename.endswith(('.txt', '.py', '.js', '.html', '.css', '.json', '.md')):
@@ -90,23 +107,27 @@ def extract_text_from_file(file: UploadFile, contents: bytes) -> str:
         else:
             return contents.decode('utf-8')
     except UnicodeDecodeError:
-        # Try different encodings if UTF-8 fails
         raise ServiceError("Unable to decode file contents", status_code=400)
 
 async def service_process_file(file: UploadFile, summary: Summary):
+    """Processes uploaded file, stores it in GridFS, and generates summary"""
+    # Read file contents
     file_contents = await file.read()
 
+    # Prepare metadata
     metadata = {
         "filename": file.filename,
         "content_type": file.content_type,
     }
 
+    # Store in GridFS
     file_id = grid_fs.put(
         file_contents,
         filename=metadata["filename"],
         content_type=metadata["content_type"]
     )
 
+    # Process and create summary
     metadata["file_id"] = str(file_id)
     summary.filedata = metadata
     initialData = extract_text_from_file(file, file_contents)
@@ -115,30 +136,37 @@ async def service_process_file(file: UploadFile, summary: Summary):
     summary_data['outputData'] = outputData['Summary']
     summary_data['title'] = outputData['Title']  
 
+    # Save to database
     summary_data['_id'] = str(uuid.uuid4())
     summaries_collection_name.insert_one(summary_data)
 
     return {"message": "Summary created successfully", "summary_id": summary_data['_id'], "file_id": str(file_id)}
 
 def service_delete_summary(summary_id: str):
+    """Deletes a summary and its associated file from GridFS"""
+    # Find summary
     summary = summaries_collection_name.find_one({"_id": summary_id})
     if not summary:
         raise ValueError("Summary not found")
 
+    # Delete associated file if exists
     if "filedata" in summary and summary["filedata"]:
         file_id = summary["filedata"].get("file_id") 
         if file_id:
             grid_fs.delete(file_id)
 
+    # Delete summary
     summaries_collection_name.delete_one({"_id": summary_id})
-
     return {"message": "Summary deleted successfully"}
 
 def service_regenrate_summary(summary_id: str, feedback: str):
+    """Regenerates a summary based on user feedback"""
+    # Find existing summary
     summary = summaries_collection_name.find_one({"_id": summary_id})
     if not summary:
         raise NotFoundError("Summary not found")
 
+    # Process feedback and update
     summary_data = dict(summary)
     outputData = regenerate_feedback(summary_data, feedback)
     summary_data['outputData'] = outputData['Summary']
@@ -147,6 +175,7 @@ def service_regenrate_summary(summary_id: str, feedback: str):
     return {"message": "Summary regenerated successfully"}
 
 def extract_text_from_pdf(uploaded_file: UploadFile):
+    """Extracts text content from PDF files"""
     text = ""
     pdf_reader = PdfReader(uploaded_file.file)
     for page_num in range(len(pdf_reader.pages)):
@@ -162,21 +191,21 @@ def service_share_summary(summary_id: str, recipient: str):
     :return: Success or failure message
     """
     try:
-        # Check if the summary exists
+        # Verify summary exists
         summary = summaries_collection_name.find_one({"_id": summary_id})
         if not summary:
             raise NotFoundError("Summary not found")
 
-        # Check if the recipient exists
+        # Verify recipient exists
         recipient_user = users_collection_name.find_one({"email": recipient})
         if not recipient_user:
             raise NotFoundError("The recipient must be a registered user of Briefly.")
 
-        # Check if the sender and recipient are the same
+        # Prevent self-sharing
         if summary["userId"] == recipient_user["_id"]:
             raise ServiceError("You cannot share a summary with yourself.")
 
-        # Create a record in the shared summaries (if necessary)
+        # Create sharing record
         shared_record = {
             "_id": str(uuid.uuid4()),
             "summary_id": summary_id,
@@ -185,11 +214,10 @@ def service_share_summary(summary_id: str, recipient: str):
             "shared_at": datetime.datetime.now(),
         }
 
-        # Assuming you have a collection for shared summaries
+        # Save sharing record
         shared_summaries_collection = summaries_collection_name.database["shared_summaries"]
         shared_summaries_collection.insert_one(shared_record)
 
-        # Return success message
         return {"message": f"Summary shared successfully with {recipient}"}
 
     except NotFoundError as e:
@@ -202,22 +230,22 @@ def service_get_shared_summaries(user_id: str):
     Fetch summaries shared with a specific user.
     """
     try:
-        # Query shared summaries for the given user
+        # Query shared summaries
         shared_records = shared_summaries_collection_name.find({"recipient_id": user_id}).sort("shared_at", -1)
         
         result = []
         for shared_record in shared_records:
-            # Get the original summary
+            # Get original summary
             summary = summaries_collection_name.find_one({"_id": shared_record["summary_id"]})
             if not summary:
                 continue
 
-            # Get the sender's information
+            # Get sender info
             sender = users_collection_name.find_one({"_id": shared_record["sender_id"]})
             if not sender:
                 continue
 
-            # Use the serializer to format the data
+            # Format data
             shared_summary = shared_summary_serialiser(shared_record, summary, sender)
             result.append(shared_summary)
 
@@ -227,6 +255,7 @@ def service_get_shared_summaries(user_id: str):
         raise ServiceError(f"Failed to fetch shared summaries: {str(e)}")
 
 def service_get_summary(summary_id: str):
+    """Retrieves a specific summary by ID"""
     summary = summaries_collection_name.find_one({"_id": summary_id})
     if not summary:
         raise ValueError("Summary not found")
@@ -234,33 +263,38 @@ def service_get_summary(summary_id: str):
     return summary
 
 def service_download_file(file_id: str):
-    # Fetch the file from GridFS
+    """Streams file from GridFS for download"""
     try:
         grid_out = grid_fs.get(ObjectId(file_id))
     except Exception:
         raise HTTPException(status_code=404, detail="File not found")
 
-    # Stream the file in chunks
+    # Stream file in chunks
     async def file_iterator():
         while chunk := grid_out.read(1024 * 1024):  # 1 MB chunks
             yield chunk
 
-    # Return the streamed file response
     return StreamingResponse(
         file_iterator(),
         media_type=grid_out.content_type,
-            headers={"Content-Disposition": f"attachment; filename={grid_out.filename}"}
+        headers={"Content-Disposition": f"attachment; filename={grid_out.filename}"}
     )
 
 def clean(data):
-    # Remove special characters from the start and end of the string
+    """Removes special characters from start and end of string"""
     return re.sub(r'^[^\w]+|[^\w]+$', '', data)
 
 def call_to_AI(inputType, inputData):
+    """Processes input through Mistral AI for summarization"""
+    # Select appropriate model
     model = "open-mistral-nemo"
     if inputType == "code":
         model = "open-codestral-mamba"
+
+    # Initialize Mistral client
     client = Mistral(api_key=api_key)
+    
+    # Make API call
     chat_response = client.chat.complete(
         model = model,
         messages = [
@@ -308,12 +342,14 @@ def call_to_AI(inputType, inputData):
           "type": "json_object",
         }
     )
+
+    # Process response
     outputData_string = chat_response.choices[0].message.content 
     try:
         outputData = json.loads(outputData_string, strict=False)
     except json.JSONDecodeError:
-        # If JSON parsing fails, extract title and summary manually
-        outputData = {}  # Initialize empty dict
+        # Handle parsing errors
+        outputData = {}
         try:
             title = clean(outputData_string.split("Title:")[1].split("Summary:")[0])
             summary = clean(outputData_string.split("Summary:")[1])
@@ -325,11 +361,14 @@ def call_to_AI(inputType, inputData):
     return outputData
 
 def regenerate_feedback(summary_data, feedback):
+    """Regenerates summary based on user feedback using AI"""
+    # Select model based on content type
     inputType = summary_data['type']
     model = "open-mistral-nemo"
-    if  inputType == "code":
+    if inputType == "code":
         model = "open-codestral-mamba"
 
+    # Get initial data
     initialData = summary_data['initialData']
     if initialData is None and summary_data['filedata'] is not None:
         filedata = summary_data['filedata']
@@ -345,6 +384,7 @@ def regenerate_feedback(summary_data, feedback):
         temp_file = TempUploadFile(filedata['filename'], file_contents)
         initialData = extract_text_from_file(temp_file, file_contents)
 
+    # Process through AI
     client = Mistral(api_key=api_key)
     chat_response = client.chat.complete(
         model = model,
@@ -400,13 +440,14 @@ def regenerate_feedback(summary_data, feedback):
           "type": "json_object",
         }
     )
-    outputData_string = chat_response.choices[0].message.content 
 
+    # Process response
+    outputData_string = chat_response.choices[0].message.content 
     try:
         outputData = json.loads(outputData_string, strict=False)
     except json.JSONDecodeError:
-        # If JSON parsing fails, extract title and summary manually
-        outputData = {}  # Initialize empty dict
+        # Handle parsing errors
+        outputData = {}
         try:
             summary = clean(outputData_string.split("Summary:")[1])
             outputData['Summary'] = summary
