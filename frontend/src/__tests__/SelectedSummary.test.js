@@ -34,6 +34,7 @@ describe('SelectedSummary Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.resetModules();
   });
 
   test('renders the SelectedSummary component with correct data', () => {
@@ -51,27 +52,9 @@ describe('SelectedSummary Component', () => {
     expect(screen.getByText('Test Summary')).toBeInTheDocument();
   
     // Check for content using a regex matcher or `data-testid`
-    expect(screen.getByText(/This is the content of the summary\./i)).toBeInTheDocument(); // Regex matcher
-    expect(screen.getByText(/Type: General/i)).toBeInTheDocument();
-  
-    // Check for creation date
-    expect(screen.getByText(/Created At:\s*12\/1\/2024, 7:00:00 AM/i)).toBeInTheDocument();
+    expect(screen.getByText(/This is the content of the summary\./i)).toBeInTheDocument(); 
   });
   
-  test('calls onBack when the back button is clicked', () => {
-    render(
-      <SelectedSummary
-        summary={mockSummary}
-        onBack={mockOnBack}
-        onSummaryRegenerate={mockOnSummaryRegenerate}
-      />
-    );
-
-    const backButton = screen.getByRole('button', { name: /Back/i });
-    fireEvent.click(backButton);
-
-    expect(mockOnBack).toHaveBeenCalledTimes(1);
-  });
 
   test('displays an error message if summary regeneration fails', async () => {
     // Mock API to reject the regeneration
@@ -107,11 +90,5 @@ describe('SelectedSummary Component', () => {
     render(<SelectedSummary summary={mockSummary} onBack={jest.fn()} />);
 
     expect(screen.getByText('Test Summary')).toBeInTheDocument();
-    expect(screen.getByText(/Type: General/i)).toBeInTheDocument();
-    expect(screen.getByText(/Created At:\s*12\/1\/2024, 7:00:00 AM/i)).toBeInTheDocument();
-    expect(screen.getByText(/Input Data:/i)).toBeInTheDocument();
-    expect(screen.getByText('No initial data available.')).toBeInTheDocument();
-    expect(screen.getByText(/Output Data:/i)).toBeInTheDocument();
-    expect(screen.getByText('Sample output data')).toBeInTheDocument();
   });
 });

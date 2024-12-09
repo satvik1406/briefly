@@ -18,6 +18,10 @@ jest.mock('react-markdown', () => (props) => (
 jest.mock('remark-gfm', () => jest.fn());
 
 describe('MarkdownRenderer Component', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        jest.resetModules();
+      });
   test('renders plain text content', () => {
     const plainText = 'This is a plain text paragraph.';
     render(<MarkdownRenderer content={plainText} />);
@@ -47,6 +51,15 @@ describe('MarkdownRenderer Component', () => {
     const codeBlock = screen.getByTestId('react-markdown');
     expect(screen.getByTestId('react-markdown')).toBeInTheDocument();
     expect(codeBlock).toBeInTheDocument();
+  });
+
+  test('renders non-inline code block with syntax highlighting', () => {
+    const codeContent = '```js\nconsole.log("Hello, world!");\n```';
+    render(<MarkdownRenderer content={codeContent} />);
+  
+    const syntaxHighlighter = screen.getByTestId('react-markdown');
+    expect(syntaxHighlighter).toBeInTheDocument();
+    expect(syntaxHighlighter).toHaveTextContent('console.log("Hello, world!");');
   });
 
   test('renders GitHub-flavored Markdown (GFM)', () => {

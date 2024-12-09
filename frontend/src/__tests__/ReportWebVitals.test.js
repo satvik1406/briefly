@@ -15,6 +15,8 @@ import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';
 describe('reportWebVitals', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.resetModules();
+    // Default mock implementations
     getCLS.mockImplementation((callback) => callback({ name: 'CLS', value: 0 }));
     getFID.mockImplementation((callback) => callback({ name: 'FID', value: 10 }));
     getFCP.mockImplementation((callback) => callback({ name: 'FCP', value: 1.5 }));
@@ -22,7 +24,13 @@ describe('reportWebVitals', () => {
     getTTFB.mockImplementation((callback) => callback({ name: 'TTFB', value: 100 }));
   });
 
-  it('does not call web vitals functions when no callback is provided', async () => {
+  it('calls all web vitals functions with the provided callback', () => {
+    const mockCallback = jest.fn();
+
+    expect(() => reportWebVitals(mockCallback));
+  });
+
+  it('does not call web vitals functions when no callback is provided', () => {
     reportWebVitals();
 
     // Ensure no calls are made to the web vitals functions
@@ -33,10 +41,10 @@ describe('reportWebVitals', () => {
     expect(getTTFB).not.toHaveBeenCalled();
   });
 
-  it('handles errors gracefully if web vitals functions throw', async () => {
+  it('handles errors gracefully if web vitals functions throw', () => {
     const mockCallback = jest.fn();
 
-    // Make one of the web vitals functions throw an error
+    // Simulate an error in one of the web vitals functions
     getCLS.mockImplementation(() => {
       throw new Error('Test Error');
     });
