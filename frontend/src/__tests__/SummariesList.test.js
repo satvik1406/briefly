@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from '../App';
 jest.mock('../RequestService', () => ({
     getUserSummaries: jest.fn(),
     deleteUserSummary: jest.fn(),
+    shareSummary: jest.fn(),
 }));
 
 jest.mock('remark-gfm', () => jest.fn());
@@ -128,6 +129,25 @@ describe('SummariesList Component', () => {
             </AuthProvider>
         );
 
+    });
+
+    test('displays loading spinner while fetching summaries', async () => {
+        getUserSummaries.mockResolvedValue({
+            status: 'OK',
+            result: mockSummaries,
+        });
+    
+        render(
+            <AuthProvider>
+                <SummariesList />
+            </AuthProvider>
+        );
+    
+        // Ensure the loading spinner is displayed before summaries are fetched
+        expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    
+        // Ensure the loading spinner disappears after fetch
+        expect(await screen.findByText('Summary 1')).toBeInTheDocument();
     });
 
 });

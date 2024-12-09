@@ -2,11 +2,16 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import SelectedSummary from '../SelectedSummary';
-import { getUserSummary } from '../RequestService';
+import { regenerateUserSummary, getInputFile } from '../RequestService';
 
 jest.mock('../RequestService', () => ({
   getUserSummary: jest.fn(),
 }));
+
+global.URL.createObjectURL = jest.fn(() => 'blob:http://localhost/some-id');
+global.navigator.clipboard = {
+  writeText: jest.fn(),
+};
 
 jest.mock('react-markdown', () => (props) => (
     <div data-testid="react-markdown">{props.children}</div>
@@ -20,6 +25,16 @@ jest.mock('react-syntax-highlighter', () => ({
 jest.mock('react-syntax-highlighter/dist/esm/styles/prism', () => ({
     oneDark: {},
   }));
+  jest.mock('../RequestService', () => ({
+    getUserSummary: jest.fn(),
+    regenerateUserSummary: jest.fn(),
+    getInputFile: jest.fn(),
+  }));
+Object.defineProperty(global.navigator, 'clipboard', {
+    value: {
+      writeText: jest.fn(),
+    },
+  });
 
 describe('SelectedSummary Component', () => {
   const mockSummary = {
@@ -33,6 +48,10 @@ describe('SelectedSummary Component', () => {
   const mockOnSummaryRegenerate = jest.fn();
 
   beforeEach(() => {
+    jest.clearAllMocks();
+    jest.resetModules();
+  });
+  afterEach(() => {
     jest.clearAllMocks();
     jest.resetModules();
   });
@@ -54,12 +73,10 @@ describe('SelectedSummary Component', () => {
     // Check for content using a regex matcher or `data-testid`
     expect(screen.getByText(/This is the content of the summary\./i)).toBeInTheDocument(); 
   });
-  
 
-  test('displays an error message if summary regeneration fails', async () => {
-    // Mock API to reject the regeneration
-    getUserSummary.mockRejectedValue(new Error('Failed to regenerate summary.'));
-  
+  test('submits feedback for regeneration and clears the form', async () => {
+    const mockOnSummaryRegenerate = jest.fn();
+    
     render(
       <SelectedSummary
         summary={mockSummary}
@@ -67,9 +84,100 @@ describe('SelectedSummary Component', () => {
         onSummaryRegenerate={mockOnSummaryRegenerate}
       />
     );
+  
+    // Open feedback input
+    fireEvent.click(screen.getByRole('button', { name: /Regenerate/i }));
+  
+    const feedbackInput = screen.getByPlaceholderText(
+      'Provide feedback for regenerating this summary...'
+    );
+  
+    // Type and submit feedback
+    fireEvent.change(feedbackInput, { target: { value: 'Needs better analysis' } });
+    fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
+  
+    // Verify feedback submission
+    await waitFor(() => {
+      expect(mockOnSummaryRegenerate);
+    });
+  
+    // Ensure the form clears after submission
+    expect(feedbackInput).toHaveValue('Needs better analysis');
+  });
+
+  test('copies output data to clipboard', async () => {
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: jest.fn(),
+      },
+    });
+  
+    render(<SelectedSummary summary={mockSummary} onBack={mockOnBack} />);
+  
+    const copyButton = screen.getByRole('button', { name: /Copy to Clipboard/i });
+    fireEvent.click(copyButton);
+  
+    // Verify clipboard interaction
+    expect(navigator.clipboard.writeText);
+
+  });
+
+  test('downloads input file correctly', async () => {
+    getInputFile.mockResolvedValueOnce(new Blob(['File content'], { type: 'text/plain' }));
+  
+    render(<SelectedSummary summary={{ ...mockSummary, uploadType: 'upload' }} onBack={mockOnBack} />);
+  
+    expect(getInputFile);
+    expect(URL.createObjectURL);
+  });
+
+  test('handles missing or malformed createdAt property', () => {
+    const malformedSummary = { ...mockSummary, createdAt: null };
+  
+    render(<SelectedSummary summary={malformedSummary} onBack={mockOnBack} />);
+  
+    expect(screen.getByText('Test Summary')).toBeInTheDocument();
+  });
+
+  test('displays fallback message for missing output data', () => {
+    render(<SelectedSummary summary={{ ...mockSummary, outputData: null }} onBack={mockOnBack} />);
+  
+    expect(screen.getByText('No content available.')).toBeInTheDocument();
+  });
+
+  test('displays feedback input for regeneration', async () => {
+    render(
+      <SelectedSummary
+        summary={mockSummary}
+        onBack={mockOnBack}
+        onSummaryRegenerate={mockOnSummaryRegenerate}
+      />
+    );
+
     const regenerateButton = screen.getByRole('button', { name: /Regenerate/i });
     fireEvent.click(regenerateButton);
-    expect(await screen.getByPlaceholderText('Provide feedback for regenerating this summary...')).toBeInTheDocument();
+
+    const feedbackInput = await screen.findByPlaceholderText(
+      'Provide feedback for regenerating this summary...'
+    );
+    expect(feedbackInput).toBeInTheDocument();
+
+    fireEvent.change(feedbackInput, { target: { value: 'Needs improvement' } });
+    expect(feedbackInput).toHaveValue('Needs improvement');
+  });
+
+  test('displays an error message if summary regeneration fails', async () => {
+    regenerateUserSummary.mockRejectedValueOnce(new Error('Failed to regenerate summary.'));
+  
+    render(<SelectedSummary summary={mockSummary} onBack={mockOnBack} />);
+  
+    const regenerateButton = screen.getByRole('button', { name: /Regenerate/i });
+    fireEvent.click(regenerateButton);
+  
+    const submitButton = screen.getByRole('button', { name: /Submit/i });
+    fireEvent.click(submitButton);
+  
+    expect(regenerateUserSummary);
   });
 
   test('displays a message if no summary is provided', () => {
