@@ -153,6 +153,19 @@ const NewSummaryDialog = ({ open, onClose, onCreate }) => {
     }
   };
 
+  const getAcceptableTypes = () => {
+    switch (summaryType) {
+      case 'code':
+        return '.js,.jsx,.ts,.tsx,.py,.java,.cpp,.c,.go';
+      case 'documentation':
+        return '.pdf,.docx,.txt';
+      case 'research':
+        return '.pdf,.docx';
+      default:
+        return '*'; // Allow all types if no type is selected
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -202,6 +215,7 @@ const NewSummaryDialog = ({ open, onClose, onCreate }) => {
               id="file-upload"
               style={{ display: 'none' }}
               onChange={handleFileChange}
+              accept={getAcceptableTypes()}//".pdf,.docx,.txt"
             />
             <FileUploadBox>
               <StyledUploadIcon />
@@ -210,7 +224,9 @@ const NewSummaryDialog = ({ open, onClose, onCreate }) => {
               </Typography>
               {!file && (
                 <Typography variant="body2" color="textSecondary">
-                  Supported formats: PDF, DOCX, TXT
+                  {summaryType === 'code' && 'Supported formats: JS, JSX, TS, TSX, PY, JAVA, CPP, C, GO'}
+                  {summaryType === 'documentation' && 'Supported formats: PDF, DOCX, TXT'}
+                  {summaryType === 'research' && 'Supported formats: PDF, DOCX'}
                 </Typography>
               )}
             </FileUploadBox>
