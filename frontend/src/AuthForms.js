@@ -44,7 +44,7 @@ const AuthForms = () => {
     confirmPassword: '',
     firstName: '',
     lastName: '',
-    phone: ''
+    phone: '',
   });
 
   const [validations, setValidations] = useState({
@@ -280,7 +280,7 @@ const AuthForms = () => {
                 label="Email"
                 value={formData.email}
                 onChange={handleInputChange}
-                error={formData.email && !validations.email}
+                error={!!formData.email && !validations.email}
                 helperText={
                   formData.email && !validations.email
                     ? 'Please enter a valid email address'
@@ -353,7 +353,7 @@ const AuthForms = () => {
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     error={
-                      formData.confirmPassword &&
+                      !!formData.confirmPassword &&
                       formData.password !== formData.confirmPassword
                     }
                     helperText={
