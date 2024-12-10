@@ -53,7 +53,20 @@ const MarkdownRenderer = ({ content }) => {
               {String(children).replace(/\n$/, '')} {/* Render code content */}
             </SyntaxHighlighter>
           ) : (
-            <code className={className} {...props}>
+            <code
+              className={className}
+              {...props}
+              style={{
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
+                background: '#f5f5f5',
+                padding: '2px 4px',
+                borderRadius: '4px',
+                lineHeight: '1.6',
+                fontSize: '16px',
+              }}
+            >
               {children}
             </code>
           );
@@ -66,7 +79,17 @@ const MarkdownRenderer = ({ content }) => {
          * @param {Array} params.children - Child nodes (text content).
          */
         p({ children }) {
-          return <p style={{ margin: '8px 0', fontSize: '16px' }}>{children}</p>;
+          return (
+            <p
+              style={{
+                margin: '8px 0', // Adjust top and bottom margin
+                fontSize: '16px', // Font size for readability
+                lineHeight: '1.6', // Adjust line height for better spacing
+              }}
+            >
+              {children}
+            </p>
+          );
         },
       }}
     >

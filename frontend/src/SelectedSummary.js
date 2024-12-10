@@ -188,7 +188,11 @@ const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
                     flex: 1, 
                     textAlign: 'justify',
                     maxHeight: '400px', // Restrict the height
-                    overflow: 'auto',
+                    overflowY: 'auto', // Allow vertical scrolling
+                    overflowX: 'auto',
+                    wordWrap: 'break-word',
+                    maxWidth: '100%',
+                    padding: '16px',
                 }}>
                     <MarkdownRenderer content={summary.outputData || 'No content available.'} />
                 </Box>
