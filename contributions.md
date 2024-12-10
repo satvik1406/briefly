@@ -1,17 +1,21 @@
-Member Contributions:
+# Member Contributions:
 
-Satvik Vuppala:
-- Managed intial setup of the code
-- Worked on front end features: login page and dashboard page
+## Member 1 : Sai Satvik Vuppala:
+- Setup the backend framework and code structure
+- Setup the frontend framework and code structure
+- Implemented Login and Register page functionality
+- Contributed to Summary Create Flow (Upload and Content flow)
+- Worked on Summary List Dashboard
+- Contributed to Summary Display & Regeneration (Upload and Content flow)
 - Assisted in writing the final project report
 
-Siva Datta Budaraju
+## Member 2 : Siva Datta Budaraju
 - Interaction with AI Agent and process information
 - Handle flow for regenerating summary from feedback
 - Imporving coverage for frontend and backend testing
 - Assisted in writing the final project report
 
-Sharvani Reddy Vempati
+## Member 3 : Sharvani Reddy Vempati
 - Logout and fetching state on refresh
 - supported backend development 
 - Implementation for showing the summaries based on shared summaries and summaries
@@ -19,12 +23,12 @@ Sharvani Reddy Vempati
 - Added ReadMe file
 - Assisted in writing the final project report.
   
-Satya Srujana Pilli
+## Member 4 : Satya Srujana Pilli
 - worked on selected summary flow
 - Front end testing 
 - Assisted in writing the final project report.
 
-Mitra Datta Ganapaneni
+## Member 5 : Mitra Datta Ganapaneni
 - Front end testing
 - worked on Shared summaries flow
 - Assisted in writing the final project report.
