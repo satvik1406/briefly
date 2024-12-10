@@ -32,6 +32,7 @@
 - ⁠Assisted in writing the final project report.
 
 ## Member 5 : Mitra Datta Ganapaneni
-- Front end testing
-- worked on Shared summaries flow
+- Worked on Shared summaries functionality and flow
+- Worked on Front end testing and ensured high test coverage
+- Modified Database Schema and implemented backend code to view Shared Summaries
 - Assisted in writing the final project report.
