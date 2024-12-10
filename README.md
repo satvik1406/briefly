@@ -62,7 +62,7 @@ Briefly is a summarization tool designed to help users summarize code, research 
    ```bash
    SECRET_KEY="<your_secret_key>"
    DATABASE_URL="<your_mongo_db_uri>"
-   ="<your_mistral_api_key>"
+   MISTRAL_API_KEY="<your_mistral_api_key>"
    ```
    - SECRET_KEY can be any string of your choice.
    - DATABASE_URL should have the uri of your MongoDB.
