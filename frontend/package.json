@@ -63,9 +63,38 @@
     "jest": "^27.5.1"
   },
   "jest": {
-  "testEnvironment": "jsdom",
-  "moduleNameMapper": {
-    "\\.(css|less|scss|sass)$": "<rootDir>/jest.cssMock.js"
+    "testEnvironment": "jsdom",
+    "moduleNameMapper": {
+      "\\.(css|less|scss|sass)$": "<rootDir>/jest.cssMock.js"
+    },
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "src/App.js",
+      "src/index.js",
+      "src/Navbar.js",
+      "src/NewSummary.js",
+      "src/SelectedSummary.js",
+      "src/SummaryToggle.js",
+      "src/AuthForms.js",
+      "src/Dashboard.js",
+      "src/SummariesList.js"
+    ],
+    "coverageDirectory": "coverage",
+    "testMatch": [
+      "**/__tests__/Navbar.test.js",
+      "**/__tests__/NewSummary.test.js",
+      "**/__tests__/SelectedSummary.test.js",
+      "**/__tests__/Dashboard.test.js",
+      "**/__tests__/AuthForms.test.js",
+      "**/__tests__/MarkdownRenderer.test.js",
+      "**/__tests__/index.test.js",
+      "**/__tests__/App.test.js",
+      "**/__tests__/SummaryToggle.test.js",
+      "**/__tests__/AuthForms.test.js",
+      "**/__tests__/SummariesList.test.js"
+    ],
+    "coverageReporters": [
+      "text-summary"
+    ]
   }
-}
 }
