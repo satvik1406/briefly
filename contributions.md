@@ -24,9 +24,12 @@
 - Assisted in writing the final project report.
   
 ## Member 4 : Satya Srujana Pilli
-- worked on selected summary flow
-- Front end testing 
-- Assisted in writing the final project report.
+-⁠  ⁠Design and Development of Selected Summary Workflow
+-  ⁠Unit and End to End testing of the Front end
+-⁠  ⁠Supported frontend development
+-⁠  ⁠Added proper documentation for frontend.
+-⁠  ⁠Added sequence diagrams, architectural design in final project report
+-⁠  ⁠Assisted in writing the final project report.
 
 ## Member 5 : Mitra Datta Ganapaneni
 - Front end testing
