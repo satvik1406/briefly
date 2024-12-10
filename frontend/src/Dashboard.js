@@ -54,6 +54,10 @@ const Dashboard = () => {
     }
   };
 
+  const handleRefresh = () => {
+    setRefreshKey(prevKey => prevKey + 1); // This will trigger the useEffect
+  };
+
   /* Show the loading screen when set */
   if (authLoading || loading) {
     return (
@@ -87,6 +91,7 @@ const Dashboard = () => {
           selectedSummary={selectedSummary} 
           setSelectedSummary={setSelectedSummary}
           onNewSummaryClick={() => setOpenNewDialog(true)}
+          onRefresh={handleRefresh}
           />
         </Container>
 

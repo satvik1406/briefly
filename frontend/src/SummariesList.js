@@ -53,8 +53,9 @@ const StyledCard = styled(Card)(({ theme }) => ({
  * @param {Object} props.selectedSummary - Currently selected summary for detailed view
  * @param {Function} props.setSelectedSummary - Function to update selected summary
  * @param {Function} props.onNewSummaryClick - Handler for creating new summary
+ * @param {Function} props.onRefresh - Handler for refreshing summaries
  */
-const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}) => {
+const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick, onRefresh }) => {
   // State management for component
   const { userData } = useAuth();
   const [summaries, setSummaries] = useState([]);
@@ -206,8 +207,11 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
    * Returns to summary list view
    */
   const handleBackToList = () => {
-    setSelectedSummary(null); // Go back to list view
-    setSharingSummary(null); // Close share dialog
+    setSelectedSummary(null);
+    setSharingSummary(null);
+    if (onRefresh) {
+      onRefresh();
+    }
   };
 
   /**
