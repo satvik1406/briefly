@@ -14,6 +14,7 @@ const Dashboard = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedSummary, setSelectedSummary] = useState(null); 
 
+  /* Load data when the userData or the refreshKey is updated */
   useEffect(() => {
     const fetchSummaries = async () => {
       setLoading(true); // Reset loading state
@@ -35,6 +36,7 @@ const Dashboard = () => {
     }
   }, [userData, refreshKey]);
 
+  /* Actions to be performed once a new summary is created */  
   const handleNewSummary = async (newSummary) => {
     try {
         setOpenNewDialog(false);
@@ -52,6 +54,7 @@ const Dashboard = () => {
     }
   };
 
+  /* Show the loading screen when set */
   if (authLoading || loading) {
     return (
       <Box
@@ -68,8 +71,10 @@ const Dashboard = () => {
     );
   }
 
+  // Rendering the dashboard component
   return (
     <>
+      {/* Render Navbar component*/}
       <Navbar />
       <Box sx={{ 
         display: 'flex', 
@@ -77,14 +82,15 @@ const Dashboard = () => {
         bgcolor: 'grey.50'
       }}>
         <Container sx={{ flexGrow: 10, py: 4 }}>
+          {/* Render SummariesList component*/}
           <SummariesList 
-          // summaries={summaries}
-          selectedSummary={selectedSummary} // Pass the selected summary
-          setSelectedSummary={setSelectedSummary} // Pass the setter
+          selectedSummary={selectedSummary} 
+          setSelectedSummary={setSelectedSummary}
           onNewSummaryClick={() => setOpenNewDialog(true)}
           />
         </Container>
 
+        {/* Render New Summary Dialog component*/}
         <NewSummaryDialog
           open={openNewDialog}
           onClose={() => setOpenNewDialog(false)}
