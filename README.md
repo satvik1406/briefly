@@ -52,7 +52,13 @@ Briefly is a summarization tool designed to help users summarize code, research 
    cd backend
    ```
 
-2. Install dependencies:
+2. Create and activate a conda environment:
+   ```bash
+   conda create --name cs520 python=3.9
+   conda activate cs520
+   ```
+
+2. Install dependencies: 
    ```bash
    pip install -r requirements.txt
    ```
@@ -68,7 +74,7 @@ Briefly is a summarization tool designed to help users summarize code, research 
    - DATABASE_URL should have the uri of your MongoDB.
    - MISTRAL_API_KEY should have your Mistral AI API key. If you do not have one, steps to generate a new free tier Mistral AI API key can be found [here](https://docs.mistral.ai/getting-started/quickstart/#:~:text=To%20get%20started%2C%20create%20a,clicking%20%22Create%20new%20key%22.).
    
-5. Start the FastAPI server:
+4. Start the FastAPI server:
    ```bash
    uvicorn main:app --reload
    ```
