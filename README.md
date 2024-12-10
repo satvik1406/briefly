@@ -58,14 +58,17 @@ Briefly is a summarization tool designed to help users summarize code, research 
    ```
    
 3. Set environment variables:
-   Create a .env file in the backend folder and add the below variables
+   Create a .env file in the backend folder and add the below variables.
    ```bash
    SECRET_KEY="<your_secret_key>"
-   MISTRAL_API_KEY="<your_mistral_api_key>"
    DATABASE_URL="<your_mongo_db_uri>"
+   ="<your_mistral_api_key>"
    ```
+   - SECRET_KEY can be any string of your choice.
+   - DATABASE_URL should have the uri of your MongoDB.
+   - MISTRAL_API_KEY should have your Mistral AI API key. If you do not have one, steps to generate a new free tier Mistral AI API key can be found [here](https://docs.mistral.ai/getting-started/quickstart/#:~:text=To%20get%20started%2C%20create%20a,clicking%20%22Create%20new%20key%22.).
    
-4. Start the FastAPI server:
+5. Start the FastAPI server:
    ```bash
    uvicorn main:app --reload
    ```
