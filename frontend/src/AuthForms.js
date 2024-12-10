@@ -1,3 +1,11 @@
+/**
+ * Authentication Forms component for login and registration.
+ * Provides a form for users to sign in or create an account, with validation
+ * for email, password, and other fields. Includes support for toggling between
+ * login and registration modes, as well as visual feedback for password requirements.
+ *
+ * @component
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './App';
@@ -29,15 +37,25 @@ import {
 } from '@mui/icons-material';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
-
+/**
+ * AuthForms Component
+ *
+ * This component provides a login and registration interface. It validates
+ * user inputs such as email, password, and phone number for registration. It
+ * allows users to toggle password visibility and provides real-time validation
+ * feedback for password requirements.
+ *
+ * @returns {JSX.Element} The rendered AuthForms component.
+ */
 const AuthForms = () => {
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const { login, register } = useAuth(); // Authentication functions from AuthProvider context
   
-  const [isLogin, setIsLogin] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  // State variables
+  const [isLogin, setIsLogin] = useState(true); // Toggles between login and registration modes
+  const [showPassword, setShowPassword] = useState(false); // Toggles password visibility
+  const [loading, setLoading] = useState(false); // Indicates if an API request is in progress
+  const [error, setError] = useState(''); // Stores error messages for display
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -45,8 +63,9 @@ const AuthForms = () => {
     firstName: '',
     lastName: '',
     phone: ''
-  });
+  }); // Holds input field values
 
+  // Validation state for email and password
   const [validations, setValidations] = useState({
     email: true,
     hasMinLength: false,
@@ -56,6 +75,11 @@ const AuthForms = () => {
     hasSpecialChar: false
   });
 
+  /**
+   * Handles changes to the phone input field.
+   *
+   * @param {string} value - The updated phone number value.
+   */
   const handlePhoneChange = (value) => {
     setFormData((prevData) => ({
       ...prevData,
@@ -63,12 +87,22 @@ const AuthForms = () => {
     }));
   };
 
-
+  /**
+   * Validates the email field based on a regex pattern.
+   *
+   * @param {string} email - The email string to validate.
+   * @returns {boolean} Whether the email is valid.
+   */
   const validateEmail = useCallback((email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   }, []);
 
+  /**
+   * Validates password requirements such as length, uppercase, and special characters.
+   *
+   * @param {string} password - The password string to validate.
+   */// Validates password requirements
   const validatePassword = useCallback((password) => {
     setValidations(prev => ({
       ...prev,
@@ -80,26 +114,43 @@ const AuthForms = () => {
     }));
   }, []);
 
+ 
+  /**
+   * Triggers password validation when the password input changes.
+   */
   useEffect(() => {
     if (formData.password) {
       validatePassword(formData.password);
     }
   }, [formData.password, validatePassword]);
 
+  /**
+   * Validates the phone number based on a regex pattern.
+   *
+   * @param {string} phone - The phone number string to validate.
+   * @returns {boolean} Whether the phone number is valid.
+   */
   const validatePhone = (phone) => {
     const phoneRegex = /^\+?[\d\s-]{10,}$/;
     return phoneRegex.test(phone);
   };
 
+   /**
+   * Handles form submission for both login and registration modes.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(''); // Reset previous errors
     
+    // Validate email format
     if (!validateEmail(formData.email)) {
       setError('Please enter a valid email address');
       return;
     }
 
+    // Additional validations for registration
     if (!isLogin) {
       if (!Object.values(validations).every(v => v)) {
         setError('Please ensure all password requirements are met');
@@ -122,15 +173,15 @@ const AuthForms = () => {
       }
     }
 
-    setLoading(true);
+    setLoading(true);  // Show loading indicator
     
     try {
       const result = isLogin 
         ? await login(formData.email, formData.password) 
-        : await register(formData);  // Send full data for registration
+        : await register(formData); // Registration requires full form data
       
       if (result.success) {
-        navigate('/dashboard');
+        navigate('/dashboard'); // Redirect to dashboard on success
       } else {
         setError(result.error || 'Authentication failed');
       }
@@ -138,7 +189,7 @@ const AuthForms = () => {
       setError('An error occurred during authentication. Please try again.');
       console.error('Authentication error:', err);
     } finally {
-      setLoading(false);
+      setLoading(false);  // Hide loading indicator
     }
   };
 
@@ -157,6 +208,11 @@ const AuthForms = () => {
     }
   }, [validateEmail]);
 
+  /**
+   * Updates input field values and triggers validation for email input.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
+   */
   const passwordRequirements = [
     { key: 'hasMinLength', text: 'At least 8 characters' },
     { key: 'hasUpperCase', text: 'One uppercase letter' },
@@ -165,9 +221,12 @@ const AuthForms = () => {
     { key: 'hasSpecialChar', text: 'One special character' }
   ];
 
+  /**
+   * Toggles between login and registration modes.
+   */
   const handleToggleMode = useCallback(() => {
     setIsLogin(prev => !prev);
-    setError('');
+    setError(''); // Reset errors
     setFormData({
       email: '',
       password: '',
@@ -184,6 +243,9 @@ const AuthForms = () => {
     }));
   }, []);
 
+  /**
+   * Toggles the visibility of the password input.
+   */
   const handleTogglePasswordVisibility = useCallback(() => {
     setShowPassword(prev => !prev);
   }, []);

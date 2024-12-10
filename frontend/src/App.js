@@ -1,3 +1,10 @@
+/**
+ * App component that sets up global authentication, routes, and protected navigation.
+ * Utilizes React Context for managing authentication and Material-UI for styling.
+ * Includes functionality for login, registration, and user session management.
+ *
+ * @component
+ */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { createUser, verifyUser, getUserSummaries } from './RequestService';
@@ -9,7 +16,16 @@ import { CircularProgress, Box } from '@mui/material';
 // Create Auth Context to manage authentication globally
 const AuthContext = createContext(null);
 
-// AuthProvider component handles global authentication state and functions
+/**
+ * AuthProvider Component
+ * Provides global authentication context for the application, including functions
+ * for login, registration, logout, and token verification. Tracks user data,
+ * authentication state, and user summaries.
+ *
+ * @param {object} props - The component's props.
+ * @param {React.ReactNode} props.children - The child components wrapped by AuthProvider.
+ * @returns {JSX.Element} The AuthProvider component.
+ */
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);  // Tracks user authentication state
   const [userData, setUserData] = useState(null);  // Stores user data after login
@@ -17,7 +33,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true); // Tracks loading state for async operations
   const [error, setError] = useState(null); // Tracks error messages for authentication and registration
 
-  // Handles user login by verifying credentials with the backend
+   /**
+   * Handles user login by verifying credentials with the backend.
+   *
+   * @async
+   * @param {string} email - The user's email address.
+   * @param {string} password - The user's password.
+   * @returns {Promise<{success: boolean, error?: string}>} The login result.
+   */
   const login = async (email, password) => {
     try {
       setLoading(true);  // Start loading indicator
@@ -50,7 +73,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Handles user registration by calling the backend API
+   /**
+   * Handles user registration by calling the backend API.
+   *
+   * @async
+   * @param {object} userData - The user's registration data.
+   * @returns {Promise<{success: boolean, user?: object, error?: string}>} The registration result.
+   */
   const register = async (userData) => {
     try {
       setLoading(true); // Start loading indicator
@@ -71,7 +100,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-   // Handles user logout by clearing authentication data
+   /**
+   * Logs out the user by clearing authentication data and state.
+   */
    const logout = () => {
     localStorage.removeItem('auth_token'); // Remove token from localStorage
     localStorage.removeItem('user_data'); // Remove user data from localStorage
@@ -81,7 +112,11 @@ export const AuthProvider = ({ children }) => {
     setError(null); // Clear errors
   };
 
-  // Verifies the validity of the stored token and fetches user data
+  /**
+   * Verifies the validity of the stored token and fetches user data and summaries.
+   *
+   * @async
+   */
   const verifyToken = async () => {
     try {
       const token = localStorage.getItem('auth_token'); // Retrieve token from localStorage
@@ -149,7 +184,13 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook to consume AuthContext
+/**
+ * Custom hook to access authentication context.
+ * Ensures the hook is used within an AuthProvider.
+ *
+ * @returns {object} The authentication context.
+ * @throws {Error} If used outside AuthProvider.
+ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -158,7 +199,15 @@ export const useAuth = () => {
   return context;
 };
 
-// ProtectedRoute component restricts access to authenticated users
+/**
+ * ProtectedRoute Component
+ * Ensures that only authenticated users can access certain routes.
+ * Redirects unauthenticated users to the login page.
+ *
+ * @param {object} props - The component's props.
+ * @param {React.ReactNode} props.children - The child components to render if authenticated.
+ * @returns {JSX.Element} The rendered route or a redirect.
+ */
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
@@ -191,7 +240,12 @@ const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : null;
 };
 
-// Main App component that defines routes and integrates AuthProvider
+/**
+ * Main App Component
+ * Defines the application's routing structure and integrates the AuthProvider.
+ *
+ * @returns {JSX.Element} The rendered App component.
+ */
 function App() {
   return (
     <BrowserRouter>
