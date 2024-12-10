@@ -50,7 +50,7 @@ const Navbar = () => {
      * - Styled with custom background and shadow using `StyledAppBar`.
      */
     <StyledAppBar position="static">
-      <Toolbar sx={{ justifyContent: 'space-between' }}> {/* Aligns elements within the toolbar */}
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <Typography
             variant="h6" // Defines the text style for the brand name
@@ -66,9 +66,8 @@ const Navbar = () => {
           </Typography>
         </Box>
 
-        {/* Action Section (e.g., Logout) */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}> {/* Horizontal layout with spacing */}
-          <Tooltip title="Logout" arrow placement="bottom"> {/* Tooltip for the logout button */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Tooltip title="Logout" arrow placement="bottom">
             <IconButton
               onClick={logout} // Calls the logout function on click
               sx={{
@@ -78,7 +77,7 @@ const Navbar = () => {
                 },
               }}
             >
-              <Logout /> {/* Logout icon */}
+              <Logout />
             </IconButton>
           </Tooltip>
         </Box>

@@ -70,7 +70,7 @@ const MarkdownRenderer = ({ content }) => {
         },
       }}
     >
-      {content} {/* Render markdown content */}
+      {content}
     </ReactMarkdown>
   );
 };

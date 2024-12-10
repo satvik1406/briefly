@@ -21,6 +21,6 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
  */
 root.render(
 <React.StrictMode>
-<App /> {/* Root component that defines the application's structure and routes */}
+  <App /> 
 </React.StrictMode>
 );
