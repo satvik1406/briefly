@@ -15,74 +15,87 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'; // Import the cop
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
+  // State to track regeneration process and user feedback
   const [isRegenerating, setIsRegenerating] = useState(false); // Track regenerate state
   const [feedback, setFeedback] = useState(''); // Store feedback from the user
   const [regenerating, setRegenerating] = useState(false); // Loading state for regeneration
-  const [isCopied, setIsCopied] = useState(false);
+  const [isCopied, setIsCopied] = useState(false); // State to track if output is copied
 
+  // Function to handle the click event for regenerating the summary
+  // Input: Click event (e)
+  // Output: Toggles the visibility of the feedback box
   const handleRegenerateClick = (e) => {
-    setIsRegenerating((prevState) => !prevState); // Show feedback box
+    setIsRegenerating((prevState) => !prevState); // Toggle feedback box visibility
   };
 
+  // Function to submit the feedback for regeneration
+  // Input: None (uses state variables)
+  // Output: Calls API to regenerate summary and updates the summary
   const handleSubmitRegenerate = async () => {
     try {
-        setRegenerating(true);
-        debugger;
+        setRegenerating(true); // Set loading state
         const regenerateSummary = {
-            summaryId: summary.id,
-            feedback: feedback,
+            summaryId: summary.id, // Summary ID for regeneration
+            feedback: feedback, // User feedback
         };
 
-        await regenerateUserSummary(regenerateSummary);
-        onSummaryRegenerate(summary);
-        setFeedback('');
-        setIsRegenerating(false);
+        await regenerateUserSummary(regenerateSummary); // Call API to regenerate summary
+        onSummaryRegenerate(summary); // Callback to update the summary
+        setFeedback(''); // Clear feedback input
+        setIsRegenerating(false); // Hide feedback box
     } catch (error) {
-        console.error('Error regenerating summary:', error);
+        console.error('Error regenerating summary:', error); // Log error
     } finally {
-        setRegenerating(false);
+        setRegenerating(false); // Reset loading state
     }
   };
 
-    const handleCopyOutput = () => {
-        if (summary.outputData) {
-            navigator.clipboard.writeText(summary.outputData); // Copy the text to clipboard
-            setIsCopied(true); // Show feedback
-            setTimeout(() => setIsCopied(false), 2000); // Reset feedback after 2 seconds
-        }
-    };
-
-    const handleFileDownload = async () => {
-        try {
-        // Backend endpoint to handle file downloads
-            const blob = await getInputFile(summary.fileId);
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = summary.fileName || "downloaded_file"; // Set the file name for download
-            document.body.appendChild(link);
-            link.click();
-        
-            // Cleanup the temporary link
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
-        } catch (error) {
-            console.error('Error downloading file:', error);
-        }
-    };
-
-    if (!summary) {
-        return (
-          <Box sx={{ p: 2 }}>
-            <Typography variant="h4" sx={{ mb: 2 }}>
-              No Summary Available
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Please select a summary to view its details.
-            </Typography>
-            <button onClick={onBack}>Back</button>
-          </Box>
-        );
+  // Function to handle copying output data to clipboard
+  // Input: None (uses state variable summary.outputData)
+  // Output: Copies output data to clipboard and shows feedback
+  const handleCopyOutput = () => {
+      if (summary.outputData) {
+          navigator.clipboard.writeText(summary.outputData); // Copy the text to clipboard
+          setIsCopied(true); // Show feedback
+          setTimeout(() => setIsCopied(false), 2000); // Reset feedback after 2 seconds
       }
+  };
+
+  // Function to handle file download
+  // Input: None (uses state variable summary.fileId)
+  // Output: Downloads the file associated with the summary
+  const handleFileDownload = async () => {
+      try {
+      // Backend endpoint to handle file downloads
+          const blob = await getInputFile(summary.fileId);
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = summary.fileName || "downloaded_file"; // Set the file name for download
+          document.body.appendChild(link);
+          link.click();
+      
+          // Cleanup the temporary link
+          document.body.removeChild(link);
+          URL.revokeObjectURL(link.href);
+      } catch (error) {
+          console.error('Error downloading file:', error);
+      }
+  };
+
+  // Render if no summary is available
+  if (!summary) {
+      return (
+        <Box sx={{ p: 2 }}>
+          <Typography variant="h4" sx={{ mb: 2 }}>
+            No Summary Available
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            Please select a summary to view its details.
+          </Typography>
+          <button onClick={onBack}>Back</button>
+        </Box>
+      );
+  }
 
     return (
         <Box sx={{ p: 2 }}>
@@ -180,26 +193,26 @@ const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
                     <MarkdownRenderer content={summary.outputData || 'No content available.'} />
                 </Box>
 
-                <Box
+            <Box
+                sx={{
+                display: 'flex',
+                flexDirection: 'column', // Stack buttons vertically
+                alignItems: 'center',
+                ml: 2, // Add spacing from content
+                }}
+            >
+                {/* Retry Button */}
+                <Tooltip title="Regenerate" arrow>
+                <IconButton
                     sx={{
-                    display: 'flex',
-                    flexDirection: 'column', // Stack buttons vertically
-                    alignItems: 'center',
-                    ml: 2, // Add spacing from content
+                    color: 'secondary.main',
+                    mb: 1, // Add margin between buttons
                     }}
+                    onClick={handleRegenerateClick}
                 >
-                    {/* Retry Button */}
-                    <Tooltip title="Regenerate" arrow>
-                    <IconButton
-                        sx={{
-                        color: 'secondary.main',
-                        mb: 1, // Add margin between buttons
-                        }}
-                        onClick={handleRegenerateClick}
-                    >
-                        <ReplayIcon /> {/* Material-UI's Retry Icon */}
-                    </IconButton>
-                    </Tooltip>
+                    <ReplayIcon /> {/* Material-UI's Retry Icon */}
+                </IconButton>
+                </Tooltip>
 
                     {/* Copy Button */}
                     <Tooltip title={isCopied ? 'Copied!' : 'Copy to Clipboard'} arrow>
@@ -256,4 +269,4 @@ const SelectedSummary = ({ summary, onBack, onSummaryRegenerate }) => {
       );     
     };
 
-    export default SelectedSummary;
+export default SelectedSummary; // Export the component

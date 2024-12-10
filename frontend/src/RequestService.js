@@ -2,6 +2,9 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8000';
 
+// Function to create a new user
+// Input: userData (object) - Data for the new user
+// Output: Promise resolving to the created user data
 export const createUser = async (userData) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/user/create`, userData);
@@ -12,16 +15,22 @@ export const createUser = async (userData) => {
   }
 };
 
+// Function to verify an existing user
+// Input: userData (object) - Data for user verification
+// Output: Promise resolving to the verification result
 export const verifyUser = async (userData) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/user/verify`, userData);
-    return response.data;
+    const response = await axios.post(`${API_BASE_URL}/user/verify`, userData); // Send POST request to verify user
+    return response.data; // Return the verification result
   } catch (error) {
     console.error('Error verifying user:', error.response?.data || error.message);
     throw error.response?.data || 'Error verifying user';
   }
 };
 
+// Function to get user summaries
+// Input: userId (string) - ID of the user whose summaries are to be fetched
+// Output: Promise resolving to the user's summaries
 export const getUserSummaries = async (userId) => {
   try {
     const token = localStorage.getItem('auth_token');
@@ -38,6 +47,9 @@ export const getUserSummaries = async (userId) => {
   }
 };
 
+// Function to create a user summary
+// Input: userData (object) - Data for the new summary
+// Output: Promise resolving to the created summary data
 export const createUserSummary = async (userData) => {
   try {
     const token = localStorage.getItem('auth_token');
@@ -60,15 +72,18 @@ export const createUserSummary = async (userData) => {
   }
 };
 
+// Function to upload a user summary
+// Input: userData (object) - Data for the upload, including file and metadata
+// Output: Promise resolving to the upload result
 export const userSummaryUpload = async (userData) => {
   try {
     const token = localStorage.getItem('auth_token');
 
-    const formData = new FormData();
-    formData.append('userId', userData.userId);
-    formData.append('type', userData.type);
-    formData.append('uploadType', userData.uploadType);
-    formData.append('file', userData.initialData);
+    const formData = new FormData(); // Create a FormData object for file upload
+    formData.append('userId', userData.userId); // Append user ID
+    formData.append('type', userData.type); // Append type
+    formData.append('uploadType', userData.uploadType); // Append upload type
+    formData.append('file', userData.initialData); // Append the file
 
     const headers = {
       Authorization: `Bearer ${token}`,
@@ -76,8 +91,8 @@ export const userSummaryUpload = async (userData) => {
 
     const response = await axios.post(
       `${API_BASE_URL}/summary/upload`,
-      formData,
-      { headers }
+      formData, // Send FormData in the request
+      { headers } // Include headers in the request
     );
 
     return response.data;
@@ -87,6 +102,9 @@ export const userSummaryUpload = async (userData) => {
   }
 };
 
+// Function to delete a user summary
+// Input: summaryId (string) - ID of the summary to be deleted
+// Output: Promise resolving to the response of the delete operation
 export const deleteUserSummary = async (summaryId) => {
   try {
     const token = localStorage.getItem('auth_token');
@@ -96,13 +114,16 @@ export const deleteUserSummary = async (summaryId) => {
         'Content-Type': 'application/json',
       },
     });
-    return response;
+    return response; // Return the response of the delete operation
   } catch (error) {
     console.error('Error deleting summary:', error.response?.data || error.message);
     throw error.response?.data || 'Error deleting summary';
   }
 };
 
+// Function to regenerate a user summary
+// Input: summaryData (object) - Data for regenerating the summary, including ID and feedback
+// Output: Promise resolving to the regenerated summary data
 export const regenerateUserSummary = async (summaryData) => {
   try {
     const token = localStorage.getItem('auth_token');
@@ -114,8 +135,8 @@ export const regenerateUserSummary = async (summaryData) => {
 
     const response = await axios.post(
       `${API_BASE_URL}/summary/regenerate/${summaryData.summaryId}`,
-      summaryData.feedback,
-      { headers }
+      summaryData.feedback, // Send feedback for regeneration
+      { headers } // Include headers in the request
     );
 
     return response.data;
@@ -125,7 +146,9 @@ export const regenerateUserSummary = async (summaryData) => {
   }
 };
 
-
+// Function to share a summary
+// Input: summaryId (string), recipient (string) - ID of the summary and recipient's information
+// Output: Promise resolving to the response of the share operation
 export const shareSummary = async (summaryId, recipient) => {
   try {
     const token = localStorage.getItem('auth_token'); // Get auth token
@@ -154,7 +177,9 @@ export const shareSummary = async (summaryId, recipient) => {
   }
 };
 
-
+// Function to get shared summaries for a user
+// Input: userId (string) - ID of the user whose shared summaries are to be fetched
+// Output: Promise resolving to the user's shared summaries
 export const getUserSharedSummaries = async (userId) => {
   try {
     const token = localStorage.getItem('auth_token'); // Ensure auth token is available
@@ -172,40 +197,46 @@ export const getUserSharedSummaries = async (userId) => {
   }
 };
 
+// Function to get a specific user summary
+// Input: summaryId (string) - ID of the summary to be fetched
+// Output: Promise resolving to the summary data
 export const getUserSummary = async (summaryId) => {
   try {
     const token = localStorage.getItem('auth_token');
     const response = await axios.get(`${API_BASE_URL}/summary/${summaryId}`, {
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${token}`, // Include authorization token
         'Content-Type': 'application/json',
       },
     });
-    return response.data;
+    return response.data; // Return the fetched summary data
   } catch (error) {
     console.error('Error fetching summary for user:', error.response?.data || error.message);
     throw error.response?.data || 'Error fetching summary for user';
   }
 };
 
+// Function to get an input file
+// Input: fileId (string) - ID of the file to be fetched
+// Output: Promise resolving to a Blob object representing the file
 export const getInputFile = async (fileId) => {
   try {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('auth_token'); // Retrieve auth token from local storage
 
     // Fetch the file as a Blob
     const response = await axios.get(`${API_BASE_URL}/download/${fileId}`, {
       responseType: "blob", // Ensure Axios handles the response as binary data
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${token}`, // Include authorization token
       },
     });
 
     // Create a Blob object from the response data
     const blob = new Blob([response.data], { type: response.headers["content-type"] });
-    return blob
+    return blob; // Return the Blob object
   } catch (error) {
-    console.error("Error fetching or downloading file:", error.response?.data || error.message);
-    throw error.response?.data || "Error fetching or downloading file";
+    console.error("Error fetching or downloading file:", error.response?.data || error.message); // Log error
+    throw error.response?.data || "Error fetching or downloading file"; // Throw error for handling
   }
 };
 
