@@ -9,7 +9,7 @@ Siva Datta Budaraju
 Sharvani Reddy Vempati
 - Logout and fetching state on refresh
 - supported backend development 
-- Front end and back end implementation for showing the summaries based on shared summaries and summaries
+- Implementation for showing the summaries based on shared summaries and summaries
 - Back end test cases
   
 Satya Srujana Pilli
