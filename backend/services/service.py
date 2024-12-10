@@ -286,9 +286,18 @@ def service_share_summary(summary_id: str, recipient: str):
             "recipient_id": recipient_user["_id"],
             "shared_at": datetime.datetime.now(),
         }
-
+     
         # Save sharing record
         shared_summaries_collection = summaries_collection_name.database["shared_summaries"]
+        # Check if the summary is already shared with the same recipient
+        existing_share = shared_summaries_collection.find_one({
+                     "summary_id": shared_record["summary_id"],
+                 "recipient_id": shared_record["recipient_id"]})
+
+        if existing_share:
+            # If the summary is already shared with the recipient, return a message
+            return {"message": f"Summary already shared with {recipient}"}
+        
         shared_summaries_collection.insert_one(shared_record)
 
         return {"message": f"Summary shared successfully with {recipient}"}

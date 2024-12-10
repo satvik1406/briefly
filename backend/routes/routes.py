@@ -176,6 +176,7 @@ async def share_summary(summary_id: str = Body(...), recipient: str = Body(...),
     """
     try:
         res = service_share_summary(summary_id, recipient)
+        print(res)
         return {"status": "OK", "result": res}
     except ServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
