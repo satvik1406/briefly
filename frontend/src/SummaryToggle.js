@@ -2,7 +2,14 @@ import React from 'react';
 import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
-// Styled ToggleButton for custom selected color
+/**
+ * Styled component for custom toggle button appearance.
+ * Extends MUI ToggleButton with custom colors and hover states.
+ * 
+ * @component
+ * @param {object} theme - MUI theme object
+ * @returns {Component} Styled ToggleButton component
+ */
 const CustomToggleButton = styled(ToggleButton)(({ theme }) => ({
   textAlign: 'center',
   flex: 0.18,
@@ -18,7 +25,23 @@ const CustomToggleButton = styled(ToggleButton)(({ theme }) => ({
   },
 }));
 
+/**
+ * SummaryToggle Component - Toggles between personal and shared summaries view.
+ * 
+ * @component
+ * @param {Object} props - Component props
+ * @param {string} props.currentView - Current selected view ('my-summaries' or 'shared-summaries')
+ * @param {function} props.onToggleChange - Callback function when toggle selection changes
+ * @returns {JSX.Element} Toggle button group for switching between summary views
+ */
 const SummaryToggle = ({ currentView, onToggleChange }) => {
+  /**
+   * Handles toggle button selection change.
+   * Only updates if a valid view is selected (prevents deselection).
+   * 
+   * @param {Event} event - The event object
+   * @param {string} newView - The newly selected view value
+   */
   const handleChange = (event, newView) => {
     if (newView !== null) {
       onToggleChange(newView);

@@ -30,6 +30,12 @@ import {
 import SummaryToggle from './SummaryToggle';
 import SelectedSummary from './SelectedSummary';
 
+/**
+ * Styled Card component with hover effects and shadow transitions
+ * 
+ * @component
+ * @param {object} theme - MUI theme object
+ */
 const StyledCard = styled(Card)(({ theme }) => ({
   boxShadow: theme.shadows[3],
   transition: 'transform 0.3s, box-shadow 0.3s',
@@ -39,10 +45,19 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
+/**
+ * SummariesList Component - Displays and manages user's summaries
+ * 
+ * @component
+ * @param {Object} props
+ * @param {Object} props.selectedSummary - Currently selected summary for detailed view
+ * @param {Function} props.setSelectedSummary - Function to update selected summary
+ * @param {Function} props.onNewSummaryClick - Handler for creating new summary
+ */
 const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}) => {
-  const { userData } = useAuth(); // Get user info from Auth context
+  // State management for component
+  const { userData } = useAuth();
   const [summaries, setSummaries] = useState([]);
-  // const [selectedSummary, setSelectedSummary] = useState(null); // State for the selected summary
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,6 +72,9 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
   const [summaryToDelete, setSummaryToDelete] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
 
+  /**
+   * Fetches user's personal summaries from the API
+   */
   const fetchSummaries = async () => {
     try {
       setLoading(true);
@@ -77,16 +95,17 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
     }
   };
 
+  /**
+   * Fetches summaries shared with the user
+   */
   const fetchSharedSummaries = async () => {
     try {
       setLoading(true);
       const response = await getUserSharedSummaries(userData.id);
-      console.log("response:",response);
       if (response.status !== 'OK') {
         throw new Error('Failed to fetch shared summaries');
       }
       const data = response.result;
-      console.log("data:",data);
       if (!Array.isArray(data)) {
         throw new Error('Invalid response format: result is not an array');
       }
@@ -99,6 +118,9 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
     }
   };
 
+  /**
+   * Effect hook to fetch appropriate summaries based on current view
+   */
   useEffect(() => {
     if (userData) {
       if (currentView === 'my-summaries') {
@@ -109,6 +131,10 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
     }
   }, [currentView, userData]);
 
+  /**
+   * Handles summary deletion with confirmation
+   * @param {string} summaryId - ID of summary to delete
+   */
   const handleDeleteSummary = async (summaryId) => {
     try {
       setDeleting(true);
@@ -121,10 +147,18 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
       setDeleting(false);
     }
   };
+
+  /**
+   * Initiates sharing process for a summary
+   * @param {Object} summary - Summary to be shared
+   */
   const handleShareSummary = (summary) => {
     setSharingSummary(summary); // Open the Share dialog
   };
 
+  /**
+   * Handles the actual sharing of a summary with a recipient
+   */
   const handleSendShare = async () => {
     if (!recipient) {
       alert('Please enter a recipient email or username.');
@@ -138,16 +172,18 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
       setSharingSummary(null);
       setRecipient('');
     } catch (err) {
-      console.log(err);
       console.error('Error sharing summary:', err);
-      const errorMessage= err.detail ;
-    
+      const errorMessage = err.detail;
       setErrorMessage(errorMessage);
     } finally {
       setSharing(false);
     }
   };
 
+  /**
+   * Regenerates a summary with updated content
+   * @param {Object} summary - Summary to regenerate
+   */
   const handleSummaryRegenerate = async (summary) => {
     try{
        // Update the detailed view with the regenerated summary
@@ -158,15 +194,25 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
     }
   };
 
+  /**
+   * Sets the selected summary for detailed view
+   * @param {Object} summary - Summary to view
+   */
   const handleViewSummary = (summary) => {
     setSelectedSummary(summary); // Set the selected summary for detailed view
   };
 
+  /**
+   * Returns to summary list view
+   */
   const handleBackToList = () => {
     setSelectedSummary(null); // Go back to list view
     setSharingSummary(null); // Close share dialog
   };
 
+  /**
+   * Closes all dialogs and resets related states
+   */
   const handleCloseDialog = () => {
     setSelectedSummary(null); // Close dialog
     setSharingSummary(null); // Close share dialog
@@ -174,11 +220,18 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
     setErrorMessage(''); // Reset error message state
   };
 
+  /**
+   * Opens delete confirmation dialog
+   * @param {string} summaryId - ID of summary to delete
+   */
   const confirmDeleteSummary = (summaryId) => {
     setSummaryToDelete(summaryId); // Track the summary to delete
     setDeleteDialogOpen(true); // Open the dialog
   };
 
+  /**
+   * Filters summaries based on active tab and search query
+   */
   const filteredSummaries = summaries.filter((summary) => {
     const matchesTab = activeTab === 'all' || summary.type.toLowerCase() === activeTab;
     const matchesSearch = summary.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -186,6 +239,9 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
     return matchesTab && matchesSearch; // Both conditions must be true
   });
 
+  /**
+   * Filters shared summaries based on active tab and search query
+   */
   const filteredSharedSummaries = sharedSummaries.filter((summary) => {
     const matchesTab = activeTab === 'all' || summary.type.toLowerCase() === activeTab;
     const matchesSearch = summary.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -193,10 +249,18 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
     return matchesTab && matchesSearch; // Both conditions must be true
   });
 
+  /**
+   * Handles tab change for filtering summaries
+   */
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
 
+  /**
+   * Returns style configuration for summary category chips
+   * @param {string} type - Summary type
+   * @returns {Object} Style configuration object
+   */
   const getCategoryStyles = (type) => {
     switch (type.toLowerCase()) {
       case 'code':
@@ -210,27 +274,22 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
     }
   };
 
+  // Loading state
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '50vh',
-        }}
-      >
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <CircularProgress />
       </Box>
     );
   }
 
+  // Error state
   if (error) {
     return <Alert severity="error">{error}</Alert>;
   }
 
+  // Selected summary detail view
   if (selectedSummary) {
-    // Render the SelectedSummary component
     return (
       <SelectedSummary
         summary={selectedSummary}
@@ -240,7 +299,7 @@ const SummariesList = ({ selectedSummary, setSelectedSummary, onNewSummaryClick}
     );
   }
 
-  // Render list view
+  // Main list view rendering
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h4" sx={{ mb: 2 }}>
