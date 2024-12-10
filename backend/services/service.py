@@ -470,8 +470,8 @@ def call_to_AI(inputType, inputData):
         outputData = {}
         try:
             # Extract title and summary using string splitting
-            title = clean(outputData_string.split("Title:")[1].split("Summary:")[0])
-            summary = clean(outputData_string.split("Summary:")[1])
+            title = clean(outputData_string.split("Title")[1].split("Summary")[0])
+            summary = clean(outputData_string.split("Summary")[1])
             outputData['Title'] = title
             outputData['Summary'] = summary
         except IndexError:
@@ -583,7 +583,7 @@ def regenerate_feedback(summary_data, feedback):
         # Handle parsing errors
         outputData = {}
         try:
-            summary = clean(outputData_string.split("Summary:")[1])
+            summary = clean(outputData_string.split("Summary")[1])
             outputData['Summary'] = summary
         except IndexError:
             outputData['Summary'] = clean(outputData_string)

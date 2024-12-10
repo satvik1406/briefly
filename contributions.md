@@ -10,18 +10,20 @@
 - Assisted in writing the final project slides
 
 ## Member 2 : Siva Datta Budaraju
-- Interaction with AI Agent and process information
-- Handle flow for regenerating summary from feedback
-- Improving coverage for frontend and backend testing
+- Design and Implement interaction flow with AI Agent API and process information
+- Handled flow for regenerating summary from feedback
+- Prompt Engineering and tuning for Summary Creation and Regeneration
+- Experimenting and deciding on the right open-source models for each use case.
+- Improved coverage for frontend and backend testing
 - Assisted in writing the final project slides
 
 ## Member 3 : Sharvani Reddy Vempati
 - Worked on Session Management
 - Supported backend development and resolving bugs
-- Shared summary view flow
-- Back end test cases
-- Worked on ReadMe file
-- Assisted in writing the final project slides.
+- Worked on Shared Summary view flow
+- Setup and Implement Backend testing, improve coverage
+- Maintained documentation and setup instruction
+- Assisted in writing the final project slides
   
 ## Member 4 : Satya Srujana Pilli
 - ⁠Design and Development of Selected Summary Workflow

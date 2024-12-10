@@ -63,17 +63,14 @@ Briefly is a summarization tool designed to help users summarize code, research 
    pip install -r requirements.txt
    ```
    
-3. Set environment variables:
-   Create a .env file in the backend folder and add the below variables.
-   ```bash
-   SECRET_KEY="<your_secret_key>"
-   DATABASE_URL="<your_mongo_db_uri>"
-   MISTRAL_API_KEY="<your_mistral_api_key>"
-   ```
+3. Set environment variables:\
+   Update the below environment variables in the .env file in the backend folder.
    - SECRET_KEY can be any random string of your choice.
    - DATABASE_URL should have the uri of your MongoDB.
    - MISTRAL_API_KEY should have your Mistral AI API key. If you do not have one, steps to generate a new free tier Mistral AI API key can be found [here](https://docs.mistral.ai/getting-started/quickstart/#:~:text=To%20get%20started%2C%20create%20a,clicking%20%22Create%20new%20key%22.).
    
+   **Note** : A mail has been sent to the UMass CS520 instructors with link to the .env file that can be directly used here.  
+
 4. Start the FastAPI server:
    ```bash
    uvicorn main:app --reload
@@ -123,6 +120,10 @@ Briefly is a summarization tool designed to help users summarize code, research 
    npx jest --coverage
    ```
 
+   ## Frontend Test Coverage Report:
+
+      ![Frontend Test Coverage Screenshot](frontend/front-end-testing-report.png)
+
 ### Backend Testing
 
 1. Navigate to the backend directory:
@@ -145,7 +146,6 @@ Briefly is a summarization tool designed to help users summarize code, research 
    pytest --cov=. tests/
    ```
    
-   To get coverage report in a easily readable HTML format:
-   ```bash
-   pytest --cov=. --cov-report=html tests/
-   ```
+   ## Backend Test Coverage Report:
+
+   ![Backend Test Coverage Screenshot](backend/tests/back-end-testing-report.png)
