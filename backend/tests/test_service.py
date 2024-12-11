@@ -17,9 +17,6 @@ from bson import ObjectId
 from fastapi.exceptions import HTTPException
 import time
 
-# Set the environment variable for the test database
-# os.environ['DATABASE_URL'] = 'mongodb+srv://admin:user123@brieflyapplicationclust.g7ifw.mongodb.net/?retryWrites=true&w=majority&appName=BrieflyApplicationCluster'  # Adjust as necessary
-
 client = TestClient(app)
 
 mongo_client = MongoClient(os.environ['DATABASE_URL'])
