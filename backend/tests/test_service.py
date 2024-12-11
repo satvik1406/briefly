@@ -18,7 +18,7 @@ from fastapi.exceptions import HTTPException
 import time
 
 # Set the environment variable for the test database
-os.environ['DATABASE_URL'] = 'mongodb+srv://admin:user123@brieflyapplicationclust.g7ifw.mongodb.net/?retryWrites=true&w=majority&appName=BrieflyApplicationCluster'  # Adjust as necessary
+# os.environ['DATABASE_URL'] = 'mongodb+srv://admin:user123@brieflyapplicationclust.g7ifw.mongodb.net/?retryWrites=true&w=majority&appName=BrieflyApplicationCluster'  # Adjust as necessary
 
 client = TestClient(app)
 
@@ -60,6 +60,11 @@ def setup_database():
     )
     user2_dict = user2.dict()
     user2_dict['_id']= "aac0c1cc-8af4-4501-81a4-ee10a90cbbcb"
+    
+    users_collection.delete_one({"email": user1.email})
+    users_collection.delete_one({"email": user2.email})
+    summaries_collection.delete_many({"userId": {"$in": [user1_dict["_id"], user2_dict["_id"]]}})
+    
     # Insert users into the database
     users_collection.insert_many([user1_dict, user2_dict])  # Convert to dict for insertion
 
