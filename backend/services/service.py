@@ -20,7 +20,9 @@ from config.database import grid_fs
 from bson import ObjectId
 from io import BytesIO
 from docx import Document
-
+import examples.code_summary_examples as code_examples
+from services.utils import extract_text_from_pdf, clean, get_all_examples_for_language, regenerate_feedback, extract_text_from_file
+from services.calls_to_ai import complete_chat, call_to_AI, regenerate_chat_response, prompts
 # Load environment variables
 load_dotenv()
 
@@ -30,13 +32,6 @@ api_key = os.getenv('MISTRAL_API_KEY')
 
 if not SECRET_KEY or not api_key:
     raise ValueError("Missing required environment variables. Please check your .env file.")
-
-# Predefined prompts for different types of content summarization
-prompts = {
-    'code': "You are a code summarisation tool. Understand the given code and output the detailed summary of the code.",
-    'research': "You are a research article summarisation tool. Go through the research article given to you and give a detailed summary. Make sure your summary covers motivation, methodology, experiment results and future improvements.",
-    'documentation': "You are a summarisation tool. You will be given a piece of text that you should summarize, make sure to cover as much content as you can. Be as technical as you can be."
-}
 
 # Authentication functions
 def create_access_token(data: dict, expires_delta: datetime.timedelta):
@@ -120,38 +115,6 @@ def service_create_summary(summary: Summary):
     summaries_collection_name.insert_one(summary_data)
     return {"message": "Summary created successfully", "summary_id": summary_data['_id']}
 
-# File processing functions
-def extract_text_from_file(file: UploadFile, contents: bytes) -> str:
-    """
-    Extracts text content from various file types.
-    
-    Args:
-        file (UploadFile): File object with filename and content type
-        contents (bytes): Raw file contents
-    
-    Returns:
-        str: Extracted text content
-    
-    Raises:
-        ServiceError: If file contents cannot be decoded
-    
-    Notes:
-        Supports PDF, TXT, common code files, DOC/DOCX formats
-    """
-    try:
-        # Handle different file types
-        if file.filename.endswith('.pdf'):
-            return extract_text_from_pdf(file)
-        elif file.filename.endswith(('.txt', '.py', '.js', '.html', '.css', '.json', '.md')):
-            return contents.decode('utf-8')
-        elif file.filename.endswith(('.doc', '.docx')):
-            doc = Document(BytesIO(contents))
-            return '\n'.join([paragraph.text for paragraph in doc.paragraphs])
-        else:
-            return contents.decode('utf-8')
-    except UnicodeDecodeError:
-        raise ServiceError("Unable to decode file contents", status_code=400)
-
 async def service_process_file(file: UploadFile, summary: Summary):
     """
     Processes uploaded file, stores it in GridFS, and generates summary.
@@ -230,23 +193,6 @@ def service_regenrate_summary(summary_id: str, feedback: str):
     summary_data['title'] = outputData['Title']
     summaries_collection_name.update_one({"_id": summary_id}, {"$set": summary_data})
     return {"message": "Summary regenerated successfully"}
-
-def extract_text_from_pdf(uploaded_file: UploadFile):
-    """
-    Extracts text content specifically from PDF files.
-    
-    Args:
-        uploaded_file (UploadFile): PDF file to extract text from
-    
-    Returns:
-        str: Extracted text content from all pages
-    """
-    text = ""
-    pdf_reader = PdfReader(uploaded_file.file)
-    for page_num in range(len(pdf_reader.pages)):
-        page = pdf_reader.pages[page_num]
-        text += page.extract_text()
-    return text
 
 def service_share_summary(summary_id: str, recipient: str):
     """
@@ -394,207 +340,3 @@ def service_download_file(file_id: str):
         media_type=grid_out.content_type,
         headers={"Content-Disposition": f"attachment; filename={grid_out.filename}"}
     )
-
-def clean(data):
-    """
-    Removes special characters from start and end of string.
-    
-    Args:
-        data (str): String to clean
-    
-    Returns:
-        str: Cleaned string with special characters removed from start and end
-    """
-    return re.sub(r'^[^\w]+|[^\w]+$', '', data)
-
-def call_to_AI(inputType, inputData):
-    """Processes input through Mistral AI for summarization"""
-    # Select appropriate model based on content type
-    model = "open-mistral-nemo"
-    if inputType == "code":
-        model = "open-codestral-mamba"
-
-    # Initialize API client
-    client = Mistral(api_key=api_key)
-    
-    # Structure conversation with system prompts and user input
-    chat_response = client.chat.complete(
-        model = model,
-        messages = [
-            # System role: Set context and behavior
-            {
-                "role": "system",
-                "content": prompts[inputType],
-            },
-            # System role: Provide output format example
-            {
-                "role": "system",
-                "content": '''
-                This is an example showing how the format of the output should be, use this ONLY as an example and DO NOT fetch any data from this into your output. 
-                <Example_1>
-                Input:
-                "
-                    print('Hello World')
-                "
-                Output:
-                "
-                {
-                    "Title": "Printing Hello World in Python",
-                    "Summary": "
-                    The output of the code will be "Hello World", which is printed to the console.
-                    The 'print' function in Python is used to output the specified message to the screen. 
-                    In this case, the message is "Hello World". The code simply calls this function with the string "Hello World" as its argument. 
-                    When executed, the program will print this string to the console
-                    "
-                }
-                "
-                </Example_1>
-
-                Follow the format specified in the above example.
-                ''',
-            },
-            # User role: Actual content to summarize
-            {
-                "role": "user",
-                "content": inputData,
-            },
-            # System role: Final formatting instruction
-            {
-                "role": "system",
-                "content":"Return the Title and Summary in short json object.",
-            }
-        ],
-        response_format = {
-          "type": "json_object",
-        }
-    )
-
-    # Extract and parse response
-    outputData_string = chat_response.choices[0].message.content 
-    try:
-        # Attempt to parse JSON response
-        outputData = json.loads(outputData_string, strict=False)
-    except json.JSONDecodeError:
-        # Fallback parsing if JSON is malformed
-        outputData = {}
-        try:
-            # Extract title and summary using string splitting
-            title = clean(outputData_string.split("Title")[1].split("Summary")[0])
-            summary = clean(outputData_string.split("Summary")[1])
-            outputData['Title'] = title
-            outputData['Summary'] = summary
-        except IndexError:
-            # If splitting fails, use entire response as summary
-            outputData['Summary'] = clean(outputData_string)
-
-    return outputData
-
-def regenerate_feedback(summary_data, feedback):
-    """
-    Regenerates summary based on user feedback using AI.
-    
-    Args:
-        summary_data (dict): Original summary data containing type, initial data, and file info
-        feedback (str): User feedback for regenerating the summary
-    
-    Returns:
-        dict: Contains updated 'Title' and 'Summary' based on feedback
-    
-    Notes:
-        - Uses same model selection logic as initial summarization
-        - Maintains original title while updating summary
-        - Can handle both direct text and file-based summaries
-    """
-    # Select model based on content type
-    inputType = summary_data['type']
-    model = "open-mistral-nemo"
-    if inputType == "code":
-        model = "open-codestral-mamba"
-
-    # Get initial data
-    initialData = summary_data['initialData']
-    if initialData is None and summary_data['filedata'] is not None:
-        filedata = summary_data['filedata']
-        file = grid_fs.get(ObjectId(filedata['file_id']))
-        file_contents = file.read()
-        
-        # Create a temporary UploadFile-like object with a file-like interface
-        class TempUploadFile:
-            def __init__(self, filename, contents):
-                self.filename = filename
-                self.file = BytesIO(contents)
-                
-        temp_file = TempUploadFile(filedata['filename'], file_contents)
-        initialData = extract_text_from_file(temp_file, file_contents)
-
-    # Process through AI
-    client = Mistral(api_key=api_key)
-    chat_response = client.chat.complete(
-        model = model,
-        messages = [
-            {
-                "role": "system",
-                "content": prompts[inputType],
-            },
-            {
-                "role": "system",
-                "content": '''
-                This is an example showing how the format of the output should be, use this ONLY as an example and DO NOT fetch any data from this into your output. 
-                <Example_1>
-                Input:
-                "
-                    print('Hello World')
-                "
-                Output:
-                "
-                {
-                    "Title": "Printing Hello World in Python",
-                    "Summary": "
-                    The output of the code will be "Hello World", which is printed to the console.
-                    The 'print' function in Python is used to output the specified message to the screen. 
-                    In this case, the message is "Hello World". The code simply calls this function with the string "Hello World" as its argument. 
-                    When executed, the program will print this string to the console
-                    "
-                }
-                "
-                </Example_1>
-
-                Follow the format specified in the above example.
-                ''',
-            },
-            {
-                "role": "user",
-                "content": initialData,
-            },
-            {
-                "role": "assistant",
-                "content": summary_data['outputData'],
-            },
-            {
-                "role": "user",
-                "content": feedback
-            },
-            {
-                "role": "system",
-                "content": "Regenerate the summary based on the feedback provided by the user. Return the Title and Summary in short json object."
-            }
-        ],
-        response_format = {
-          "type": "json_object",
-        }
-    )
-
-    # Process response
-    outputData_string = chat_response.choices[0].message.content 
-    try:
-        outputData = json.loads(outputData_string, strict=False)
-    except json.JSONDecodeError:
-        # Handle parsing errors
-        outputData = {}
-        try:
-            summary = clean(outputData_string.split("Summary")[1])
-            outputData['Summary'] = summary
-        except IndexError:
-            outputData['Summary'] = clean(outputData_string)
-    outputData['Title'] = summary_data['title']
-    return outputData
